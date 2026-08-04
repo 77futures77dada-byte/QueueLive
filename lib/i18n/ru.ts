@@ -1,0 +1,42 @@
+export const ru = {
+  appTitle: "QueueLive",
+  appTagline: "Живая загруженность очередей на карте",
+
+  locationType: {
+    hospital: "Больница / травмпункт",
+    clinic: "Поликлиника",
+    mfc: "МФЦ",
+    post: "Почта",
+  },
+
+  status: {
+    low: "Свободно",
+    medium: "Есть очередь",
+    high: "Долгое ожидание",
+    stale: "Данные устарели",
+    "no-data": "Нет данных",
+  },
+
+  report: {
+    prompt: "Как сейчас в очереди?",
+    submit: "Отправить",
+    submitting: "Отправка…",
+    success: "Спасибо! Отметка сохранена.",
+    updatedAgo: (minutes: number) => `Обновлено ${minutes} мин. назад`,
+    neverReported: "Отметок ещё не было",
+  },
+
+  geoCheck: {
+    denied: "Не удалось определить геолокацию. Разрешите доступ и попробуйте снова.",
+    unavailable: "Геолокация недоступна в этом браузере.",
+    tooFar: (distanceM: number) =>
+      `Вы слишком далеко от этой точки (${Math.round(distanceM)} м). Отметка доступна рядом с учреждением.`,
+    checking: "Проверяем геолокацию…",
+  },
+
+  rateLimit: {
+    tooSoon: "Вы уже отмечали эту точку недавно. Попробуйте позже.",
+  },
+} as const;
+
+export type Dictionary = typeof ru;

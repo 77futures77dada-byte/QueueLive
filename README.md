@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QueueLive
 
-## Getting Started
+Карта города с живыми отметками загруженности очередей в травмпунктах, поликлиниках и МФЦ.
 
-First, run the development server:
+## Стек
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Next.js (App Router) + TypeScript + Tailwind CSS, Leaflet/OpenStreetMap, Supabase (Postgres + Realtime).
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Локальный запуск
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Создай проект на [supabase.com](https://supabase.com) (бесплатный tier достаточно для MVP).
+2. В SQL Editor выполни миграции по порядку:
+   - `supabase/migrations/0001_init_schema.sql`
+   - `supabase/migrations/0002_seed_locations.sql`
+3. В Project Settings → API возьми `Project URL` и `anon public` key.
+4. Скопируй `.env.local.example` в `.env.local` и подставь значения:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=...
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   ```
+5. В Supabase включи Realtime для таблицы `queue_reports` (Database → Replication → выбрать таблицу).
+6. Установи зависимости и запусти dev-сервер:
+   ```
+   npm install
+   npm run dev
+   ```
+7. Открой http://localhost:3000 — карта Таллина с 20 seed-локациями.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Как это работает
 
-## Learn More
+- **Статус точки** — взвешенная медиана отметок за последние 30 минут (свежие отметки весят больше, экспоненциальное затухание с полураспадом 10 минут). См. `lib/aggregateStatus.ts`.
+- **Устаревание** — если свежайшая отметка старше 75 минут, статус переходит в "устарело" (серый, полупрозрачный маркер).
+- **Геопроверка** — перед отправкой отметки браузер сверяет геолокацию с координатами точки (допуск 200м). Это фильтр от случайных отметок "не глядя", не защита от намеренного спуфинга.
+- **Rate limit** — не чаще одной отметки на точку раз в 15 минут с одного `device_id` (анонимный id в localStorage). Тоже клиентский, честный фильтр — не security-граница; при реальном спаме следующий шаг — Postgres-функция + RLS-проверка по времени на insert.
+- **Realtime** — подписка на `postgres_changes` (INSERT) для `queue_reports`, статус на карте обновляется у всех открытых вкладок без перезагрузки.
 
-To learn more about Next.js, take a look at the following resources:
+## Известные упрощения MVP
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Координаты seed-локаций приблизительные (институция, не вход) — уточнить перед продакшеном.
+- i18n подготовлен структурно (`lib/i18n/`), но подключён только русский.
+- Нет аккаунтов, интеграций с реальными табло, push-уведомлений, мультигорода в UI (поле `city` в схеме уже есть).
