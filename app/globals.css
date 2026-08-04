@@ -1,26 +1,89 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #ffffff;
+  --ink: #000000;
+  --alarm: #ff2400;
+  --muted: #6b6b6b;
+  --muted-bg: #e5e5e5;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-alarm: var(--alarm);
+  --color-muted: var(--muted);
+  --color-muted-bg: var(--muted-bg);
+  --font-sans: var(--font-brutal);
+  --font-mono: var(--font-brutal);
+  --radius-none: 0px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-radius: 0 !important;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-brutal), monospace;
+}
+
+/* Leaflet chrome, forced into the same brutalist register: square, flat,
+   no shadow. Leaflet ships its own rounded/shadowed defaults via CSS that
+   Tailwind's `rounded-none`/`shadow-none` utilities can't reach because
+   they're not applied via class on those internal elements. */
+.leaflet-container {
+  background: var(--muted-bg);
+  font-family: var(--font-brutal), monospace;
+}
+
+.leaflet-control-zoom a,
+.leaflet-control-zoom {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: 2px solid var(--ink) !important;
+}
+
+.leaflet-control-zoom a {
+  color: var(--ink) !important;
+  font-weight: 700;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: 3px solid var(--ink);
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+}
+
+.leaflet-popup-tip {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: var(--ink) !important;
+}
+
+.leaflet-popup-close-button {
+  color: var(--ink) !important;
+  font-size: 20px !important;
+  font-weight: 700;
+}
+
+@keyframes alarm-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.marker-alarm {
+  animation: alarm-pulse 1s step-start infinite;
 }

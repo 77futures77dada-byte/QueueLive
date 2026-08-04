@@ -9,9 +9,21 @@ import { t } from "@/lib/i18n";
 import type { Location, LoadLevel } from "@/types/database";
 
 const LEVELS: { level: LoadLevel; label: string; className: string }[] = [
-  { level: "low", label: t.status.low, className: "bg-green-600 hover:bg-green-700" },
-  { level: "medium", label: t.status.medium, className: "bg-yellow-500 hover:bg-yellow-600" },
-  { level: "high", label: t.status.high, className: "bg-red-600 hover:bg-red-700" },
+  {
+    level: "low",
+    label: t.status.low,
+    className: "border-ink bg-paper text-ink hover:bg-ink hover:text-paper",
+  },
+  {
+    level: "medium",
+    label: t.status.medium,
+    className: "border-ink bg-ink text-paper hover:bg-paper hover:text-ink",
+  },
+  {
+    level: "high",
+    label: t.status.high,
+    className: "border-ink bg-alarm text-paper hover:bg-paper hover:text-alarm",
+  },
 ];
 
 interface Props {
@@ -67,14 +79,18 @@ export function ReportButtons({ location, onSubmitted }: Props) {
   }
 
   if (state.phase === "success") {
-    return <p className="text-sm text-green-700">{t.report.success}</p>;
+    return (
+      <p className="border-2 border-ink bg-ink px-2 py-1 text-sm font-bold text-paper uppercase">
+        {t.report.success}
+      </p>
+    );
   }
 
   const busy = state.phase === "checking-geo" || state.phase === "submitting";
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium">{t.report.prompt}</p>
+      <p className="text-sm font-bold uppercase">{t.report.prompt}</p>
       <div className="flex flex-col gap-1.5">
         {LEVELS.map(({ level, label, className }) => (
           <button
@@ -82,14 +98,16 @@ export function ReportButtons({ location, onSubmitted }: Props) {
             type="button"
             disabled={busy}
             onClick={() => handleReport(level)}
-            className={`rounded px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 ${className}`}
+            className={`border-2 px-3 py-1.5 text-sm font-bold uppercase disabled:opacity-40 ${className}`}
           >
             {busy ? t.report.submitting : label}
           </button>
         ))}
       </div>
       {state.phase === "error" && (
-        <p className="text-sm text-red-600">{state.message}</p>
+        <p className="border-2 border-alarm px-2 py-1 text-sm font-bold text-alarm uppercase">
+          {state.message}
+        </p>
       )}
     </div>
   );
