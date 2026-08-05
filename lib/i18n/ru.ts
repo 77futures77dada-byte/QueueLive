@@ -47,6 +47,12 @@ export const ru = {
   rateLimit: {
     tooSoon: "Вы уже отмечали эту точку недавно. Попробуйте позже.",
   },
+
+  sidebar: {
+    sortByStatus: "По статусу",
+    sortByDistance: "По расстоянию",
+    distanceUnavailable: "Не удалось определить геолокацию для сортировки по расстоянию.",
+  },
 } as const;
 
 export type Dictionary = typeof ru;

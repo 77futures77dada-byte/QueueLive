@@ -7,17 +7,17 @@ import type { Location, LoadLevel } from "@/types/database";
 const LEVELS: { level: LoadLevel; label: string; className: string }[] = [
   {
     level: "low",
-    label: t.status.low,
+    label: t.statusShort.low,
     className: "bg-status-low/15 text-status-low hover:bg-status-low/25",
   },
   {
     level: "medium",
-    label: t.status.medium,
+    label: t.statusShort.medium,
     className: "bg-status-medium/15 text-status-medium hover:bg-status-medium/25",
   },
   {
     level: "high",
-    label: t.status.high,
+    label: t.statusShort.high,
     className: "bg-status-high/15 text-status-high hover:bg-status-high/25",
   },
 ];
@@ -27,37 +27,35 @@ interface Props {
   onSubmitted?: () => void;
 }
 
-export function ReportButtons({ location, onSubmitted }: Props) {
+/** Compact horizontal variant of ReportButtons for the sidebar list rows —
+ * same submit logic via useReportSubmit, just a smaller footprint. */
+export function ReportButtonsCompact({ location, onSubmitted }: Props) {
   const { state, busy, submit } = useReportSubmit(location, onSubmitted);
 
   if (state.phase === "success") {
-    return (
-      <p className="rounded-xl bg-primary-tint px-3 py-2 text-sm font-medium text-primary">
-        {t.report.success}
-      </p>
-    );
+    return <p className="text-xs font-medium text-primary">{t.report.success}</p>;
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium text-ink">{t.report.prompt}</p>
-      <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1">
+      <div className="flex gap-1.5">
         {LEVELS.map(({ level, label, className }) => (
           <button
             key={level}
             type="button"
             disabled={busy}
-            onClick={() => submit(level)}
-            className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-colors duration-200 disabled:opacity-50 ${className}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              submit(level);
+            }}
+            className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors duration-200 disabled:opacity-50 ${className}`}
           >
-            {busy ? t.report.submitting : label}
+            {label}
           </button>
         ))}
       </div>
       {state.phase === "error" && (
-        <p className="rounded-xl bg-status-high/15 px-3 py-2 text-sm text-status-high">
-          {state.message}
-        </p>
+        <p className="text-xs text-status-high">{state.message}</p>
       )}
     </div>
   );
