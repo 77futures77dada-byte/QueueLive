@@ -71,6 +71,43 @@ export interface Database {
           },
         ];
       };
+      location_notes: {
+        Row: {
+          id: string;
+          location_id: string;
+          text: string | null;
+          photo_url: string | null;
+          device_id: string;
+          hidden: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          location_id: string;
+          text?: string | null;
+          photo_url?: string | null;
+          device_id: string;
+          hidden?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          location_id?: string;
+          text?: string | null;
+          photo_url?: string | null;
+          device_id?: string;
+          hidden?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "location_notes_location_id_fkey";
+            columns: ["location_id"];
+            referencedRelation: "locations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<never, never>;
     Functions: Record<never, never>;
@@ -82,3 +119,5 @@ export type LocationType = Location["type"];
 
 export type QueueReport = Database["public"]["Tables"]["queue_reports"]["Row"];
 export type LoadLevel = QueueReport["load_level"];
+
+export type LocationNote = Database["public"]["Tables"]["location_notes"]["Row"];

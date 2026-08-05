@@ -6,18 +6,19 @@ import { Map } from "@/components/Map";
 import { Sidebar } from "@/components/Sidebar";
 import { aggregateStatus, STALE_THRESHOLD_MINUTES } from "@/lib/aggregateStatus";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
-import type { Location, QueueReport } from "@/types/database";
+import type { Location, LocationNote, QueueReport } from "@/types/database";
 
 const STATUS_REFRESH_MS = 60_000;
 
-/** Owns the shared location/report state and the current selection, and
- * lays out the sidebar + map around it. Split out from Map itself so the
- * sidebar and the map markers can stay in sync (clicking a sidebar row
+/** Owns the shared location/report/note state and the current selection,
+ * and lays out the sidebar + map around it. Split out from Map itself so
+ * the sidebar and the map markers can stay in sync (clicking a sidebar row
  * opens that marker's popup, and vice versa) without either one owning
  * the data fetching. */
 export function MapView() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [reports, setReports] = useState<QueueReport[]>([]);
+  const [notes, setNotes] = useState<LocationNote[]>([]);
   const [now, setNow] = useState(() => Date.now());
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
 
@@ -29,17 +30,22 @@ export function MapView() {
         Date.now() - STALE_THRESHOLD_MINUTES * 60_000
       ).toISOString();
 
-      const [locationsRes, reportsRes] = await Promise.all([
+      const [locationsRes, reportsRes, notesRes] = await Promise.all([
         supabase.from("locations").select("*"),
         supabase
           .from("queue_reports")
           .select("*")
           .gte("created_at", cutoffIso),
+        supabase
+          .from("location_notes")
+          .select("*")
+          .order("created_at", { ascending: false }),
       ]);
 
       if (cancelled) return;
       if (locationsRes.data) setLocations(locationsRes.data);
       if (reportsRes.data) setReports(reportsRes.data);
+      if (notesRes.data) setNotes(notesRes.data);
     }
 
     load();
@@ -72,6 +78,15 @@ export function MapView() {
           setReports((prev) => [...prev, report]);
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "location_notes" },
+        (payload) => {
+          const note = payload.new as LocationNote;
+          if (!knownLocationIds.has(note.location_id)) return;
+          setNotes((prev) => [note, ...prev]);
+        }
+      )
       .subscribe();
 
     return () => {
@@ -86,6 +101,14 @@ export function MapView() {
     }
     return grouped;
   }, [reports]);
+
+  const notesByLocation = useMemo(() => {
+    const grouped: Record<string, LocationNote[]> = {};
+    for (const note of notes) {
+      (grouped[note.location_id] ??= []).push(note);
+    }
+    return grouped;
+  }, [notes]);
 
   const statusByLocation = useMemo(() => {
     const map: Record<string, AggregatedStatus> = {};
@@ -103,6 +126,7 @@ export function MapView() {
         <Map
           locations={locations}
           statusByLocation={statusByLocation}
+          notesByLocation={notesByLocation}
           selectedLocationId={selectedLocationId}
           onSelectLocation={setSelectedLocationId}
         />

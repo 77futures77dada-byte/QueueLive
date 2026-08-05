@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { useReportSubmit } from "@/lib/useReportSubmit";
 import { t } from "@/lib/i18n";
 import type { Location, LoadLevel } from "@/types/database";
@@ -22,6 +23,8 @@ const LEVELS: { level: LoadLevel; label: string; className: string }[] = [
   },
 ];
 
+const MAX_NOTE_LENGTH = 300;
+
 interface Props {
   location: Location;
   onSubmitted?: () => void;
@@ -29,6 +32,9 @@ interface Props {
 
 export function ReportButtons({ location, onSubmitted }: Props) {
   const { state, busy, submit } = useReportSubmit(location, onSubmitted);
+  const [text, setText] = useState("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (state.phase === "success") {
     return (
@@ -41,13 +47,55 @@ export function ReportButtons({ location, onSubmitted }: Props) {
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm font-medium text-ink">{t.report.prompt}</p>
+
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value.slice(0, MAX_NOTE_LENGTH))}
+        placeholder={t.notes.placeholder}
+        rows={2}
+        disabled={busy}
+        className="rounded-xl border border-black/10 bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:outline-primary disabled:opacity-50"
+      />
+
+      <div className="flex items-center gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          disabled={busy}
+          onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
+        />
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => fileInputRef.current?.click()}
+          className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-muted hover:bg-black/5 disabled:opacity-50"
+        >
+          {photoFile ? t.notes.photoAttached : t.notes.attachPhoto}
+        </button>
+        {photoFile && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setPhotoFile(null);
+              if (fileInputRef.current) fileInputRef.current.value = "";
+            }}
+            className="text-xs text-muted underline"
+          >
+            {t.notes.removePhoto}
+          </button>
+        )}
+      </div>
+
       <div className="flex flex-col gap-2">
         {LEVELS.map(({ level, label, className }) => (
           <button
             key={level}
             type="button"
             disabled={busy}
-            onClick={() => submit(level)}
+            onClick={() => submit(level, { text, photoFile })}
             className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-colors duration-200 disabled:opacity-50 ${className}`}
           >
             {busy ? t.report.submitting : label}

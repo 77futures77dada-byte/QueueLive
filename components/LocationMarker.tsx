@@ -4,9 +4,10 @@ import L from "leaflet";
 import { useEffect, useRef } from "react";
 import { Marker, Popup } from "react-leaflet";
 import { ReportButtons } from "@/components/ReportButtons";
+import { LocationNotes } from "@/components/LocationNotes";
 import { t } from "@/lib/i18n";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
-import type { Location } from "@/types/database";
+import type { Location, LocationNote } from "@/types/database";
 
 const STATUS_COLOR: Record<AggregatedStatus["status"], string> = {
   low: "var(--status-low)",
@@ -75,12 +76,13 @@ function buildIcon(status: AggregatedStatus, zoom: number) {
 interface Props {
   location: Location;
   status: AggregatedStatus;
+  notes: LocationNote[];
   zoom: number;
   isSelected?: boolean;
   onOpen?: () => void;
 }
 
-export function LocationMarker({ location, status, zoom, isSelected, onOpen }: Props) {
+export function LocationMarker({ location, status, notes, zoom, isSelected, onOpen }: Props) {
   const markerRef = useRef<L.Marker>(null);
 
   useEffect(() => {
@@ -111,6 +113,8 @@ export function LocationMarker({ location, status, zoom, isSelected, onOpen }: P
                 : t.report.updatedAgo(status.minutesAgo)}
             </span>
           </p>
+
+          <LocationNotes notes={notes} />
 
           <ReportButtons location={location} />
         </div>

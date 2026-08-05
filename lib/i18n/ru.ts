@@ -53,6 +53,15 @@ export const ru = {
     sortByDistance: "По расстоянию",
     distanceUnavailable: "Не удалось определить геолокацию для сортировки по расстоянию.",
   },
+
+  notes: {
+    placeholder: "Комментарий (необязательно) — например, «работает одно окно»",
+    attachPhoto: "Добавить фото",
+    photoAttached: "Фото прикреплено",
+    removePhoto: "Убрать",
+    recent: "Последние заметки",
+    empty: "Заметок пока нет",
+  },
 } as const;
 
 export type Dictionary = typeof ru;

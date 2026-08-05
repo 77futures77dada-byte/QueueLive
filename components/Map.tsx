@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { LocationMarker } from "@/components/LocationMarker";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
-import type { Location } from "@/types/database";
+import type { Location, LocationNote } from "@/types/database";
 
 const TALLINN_CENTER: [number, number] = [59.437, 24.7536];
 const DEFAULT_ZOOM = 12;
@@ -36,6 +36,7 @@ function FlyToSelection({ location }: { location: Location | undefined }) {
 interface Props {
   locations: Location[];
   statusByLocation: Record<string, AggregatedStatus>;
+  notesByLocation: Record<string, LocationNote[]>;
   selectedLocationId: string | null;
   onSelectLocation: (id: string) => void;
 }
@@ -43,6 +44,7 @@ interface Props {
 export function Map({
   locations,
   statusByLocation,
+  notesByLocation,
   selectedLocationId,
   onSelectLocation,
 }: Props) {
@@ -67,6 +69,7 @@ export function Map({
           key={location.id}
           location={location}
           status={statusByLocation[location.id]}
+          notes={notesByLocation[location.id] ?? []}
           zoom={zoom}
           isSelected={location.id === selectedLocationId}
           onOpen={() => onSelectLocation(location.id)}
