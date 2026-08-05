@@ -1,13 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --paper: #ffffff;
-  --surface: #f5f8fb;
+  /* Paper sits "above" surface (elevated cards), so it stays a touch
+     lighter — both carry a pale sky-blue cast rather than neutral white. */
+  --paper: #f8fbfe;
+  --surface: #e8f3fb;
   --ink: #33322e;
   --muted: #7a776f;
   --muted-bg: #e9ebee;
-  --primary: #3e6fa5;
-  --primary-tint: #eaf1f8;
+  --primary: #4da2df;
+  --primary-tint: #e4f2fc;
   --status-low: #5f9d78;
   --status-medium: #d1a13f;
   --status-high: #c96b62;

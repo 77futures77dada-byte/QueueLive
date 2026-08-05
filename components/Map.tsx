@@ -21,6 +21,28 @@ function ZoomWatcher({ onZoomChange }: { onZoomChange: (zoom: number) => void })
   return null;
 }
 
+/** Leaflet reads its container's size once at construction and otherwise
+ * only reacts to `window` resize events. It doesn't notice when its own
+ * container changes size for other reasons — a flex reflow from sidebar
+ * content loading in, or (once this map is mounted behind a landing
+ * screen) simply not being laid out yet at the instant it's created. A
+ * stale size shows up as a map rendered into a tiny clipped corner. A
+ * ResizeObserver on the container catches all of those. */
+function AutoInvalidateSize() {
+  const map = useMap();
+  useEffect(() => {
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(container);
+    const raf = requestAnimationFrame(() => map.invalidateSize());
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [map]);
+  return null;
+}
+
 /** Flies to + zooms in on a location selected from the sidebar. Leaflet
  * only exposes this imperatively via the map instance, so it has to live
  * inside a child of MapContainer rather than as a prop on it. */
@@ -59,6 +81,7 @@ export function Map({
       scrollWheelZoom
     >
       <ZoomWatcher onZoomChange={setZoom} />
+      <AutoInvalidateSize />
       <FlyToSelection location={selectedLocation} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
