@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useReportSubmit } from "@/lib/useReportSubmit";
+import { validateNoteText } from "@/lib/noteModeration";
 import { t } from "@/lib/i18n";
 import type { Location, LoadLevel } from "@/types/database";
 
@@ -34,7 +35,21 @@ export function ReportButtons({ location, onSubmitted }: Props) {
   const { state, busy, submit } = useReportSubmit(location, onSubmitted);
   const [text, setText] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [noteError, setNoteError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Validated before submit() is ever called, so a rejected note doesn't
+  // burn the 15-minute rate-limit window — the person can just fix the
+  // text and try again.
+  function handleLevelClick(level: LoadLevel) {
+    const validation = validateNoteText(text);
+    if (!validation.ok) {
+      setNoteError(validation.reason);
+      return;
+    }
+    setNoteError(null);
+    submit(level, { text, photoFile });
+  }
 
   if (state.phase === "success") {
     return (
@@ -50,12 +65,16 @@ export function ReportButtons({ location, onSubmitted }: Props) {
 
       <textarea
         value={text}
-        onChange={(e) => setText(e.target.value.slice(0, MAX_NOTE_LENGTH))}
+        onChange={(e) => {
+          setText(e.target.value.slice(0, MAX_NOTE_LENGTH));
+          setNoteError(null);
+        }}
         placeholder={t.notes.placeholder}
         rows={2}
         disabled={busy}
         className="rounded-xl border border-black/10 bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:outline-primary disabled:opacity-50"
       />
+      {noteError && <p className="text-xs text-status-high">{noteError}</p>}
 
       <div className="flex items-center gap-2">
         <input
@@ -95,7 +114,7 @@ export function ReportButtons({ location, onSubmitted }: Props) {
             key={level}
             type="button"
             disabled={busy}
-            onClick={() => submit(level, { text, photoFile })}
+            onClick={() => handleLevelClick(level)}
             className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-colors duration-200 disabled:opacity-50 ${className}`}
           >
             {busy ? t.report.submitting : label}
