@@ -112,6 +112,9 @@ export function LocationMarker({ location, status, notes, zoom, isSelected, onOp
                 ? t.report.neverReported
                 : t.report.updatedAgo(status.minutesAgo)}
             </span>
+            <span className="block text-xs text-muted">
+              {t.report.reportsCountLastHour(status.reportsLastHour)}
+            </span>
           </p>
 
           <LocationNotes notes={notes} />

@@ -127,6 +127,9 @@ export function Sidebar({
                       : t.report.updatedAgo(status.minutesAgo)}
                   </span>
                 </p>
+                <p className="text-xs text-muted">
+                  {t.report.reportsCountLastHour(status.reportsLastHour)}
+                </p>
               </button>
               <div className="px-4 pb-3">
                 <ReportButtonsCompact location={location} />

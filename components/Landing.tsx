@@ -17,6 +17,7 @@ export function Landing({ onEnter }: Props) {
             {t.appTitle}
           </h1>
           <p className="mt-3 text-base text-muted">{t.appTagline}</p>
+          <p className="mt-1 text-sm text-muted">{t.landing.trustNote}</p>
         </div>
 
         <ul className="flex flex-col gap-3 text-ink">

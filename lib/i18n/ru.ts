@@ -1,3 +1,11 @@
+function pluralReports(count: number): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return "отметка";
+  if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return "отметки";
+  return "отметок";
+}
+
 export const ru = {
   appTitle: "Очередь за здоровьем",
   appTagline: "Загруженность травмпунктов и поликлиник — в реальном времени",
@@ -34,6 +42,8 @@ export const ru = {
     success: "Спасибо! Отметка сохранена.",
     updatedAgo: (minutes: number) => `Обновлено ${minutes} мин. назад`,
     neverReported: "Отметок ещё не было",
+    reportsCountLastHour: (count: number) =>
+      count < 3 ? "мало данных" : `${count} ${pluralReports(count)} за час`,
   },
 
   geoCheck: {
@@ -64,6 +74,7 @@ export const ru = {
   },
 
   landing: {
+    trustNote: "Статус обновляют сами посетители в реальном времени",
     points: [
       "Смотри загруженность травмпунктов и поликлиник на карте",
       "Отмечай, если сейчас в очереди — это займёт секунду",

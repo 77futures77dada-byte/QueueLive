@@ -6,14 +6,34 @@ export const STALE_THRESHOLD_MINUTES = 75;
 export const RECENT_WINDOW_MINUTES = 30;
 /** Weight halves every N minutes of report age (exponential recency decay). */
 const RECENCY_HALF_LIFE_MINUTES = 10;
+/** Window for the "N отметок за час" trust signal shown alongside status. */
+export const REPORTS_COUNT_WINDOW_MINUTES = 60;
 
 const LEVEL_SCORE: Record<LoadLevel, number> = { low: 1, medium: 2, high: 3 };
 const SCORE_LEVEL: LoadLevel[] = ["low", "medium", "high"]; // index 0 => score 1
 
 export type AggregatedStatus =
-  | { status: LoadLevel; lastReportAt: string; minutesAgo: number; peopleCount: number | null }
-  | { status: "stale"; lastReportAt: string; minutesAgo: number; peopleCount: number | null }
-  | { status: "no-data"; lastReportAt: null; minutesAgo: null; peopleCount: null };
+  | {
+      status: LoadLevel;
+      lastReportAt: string;
+      minutesAgo: number;
+      peopleCount: number | null;
+      reportsLastHour: number;
+    }
+  | {
+      status: "stale";
+      lastReportAt: string;
+      minutesAgo: number;
+      peopleCount: number | null;
+      reportsLastHour: number;
+    }
+  | {
+      status: "no-data";
+      lastReportAt: null;
+      minutesAgo: null;
+      peopleCount: null;
+      reportsLastHour: 0;
+    };
 
 function ageMinutes(createdAt: string, now: number): number {
   return Math.max(0, (now - new Date(createdAt).getTime()) / 60000);
@@ -57,13 +77,23 @@ export function aggregateStatus(
   now: number = Date.now()
 ): AggregatedStatus {
   if (reports.length === 0) {
-    return { status: "no-data", lastReportAt: null, minutesAgo: null, peopleCount: null };
+    return {
+      status: "no-data",
+      lastReportAt: null,
+      minutesAgo: null,
+      peopleCount: null,
+      reportsLastHour: 0,
+    };
   }
 
   const freshest = reports.reduce((latest, r) =>
     new Date(r.created_at) > new Date(latest.created_at) ? r : latest
   );
   const freshestAgeMinutes = ageMinutes(freshest.created_at, now);
+
+  const reportsLastHour = reports.filter(
+    (r) => ageMinutes(r.created_at, now) <= REPORTS_COUNT_WINDOW_MINUTES
+  ).length;
 
   const recent = reports.filter(
     (r) => ageMinutes(r.created_at, now) <= RECENT_WINDOW_MINUTES
@@ -75,6 +105,7 @@ export function aggregateStatus(
       lastReportAt: freshest.created_at,
       minutesAgo: Math.round(freshestAgeMinutes),
       peopleCount: freshest.people_count,
+      reportsLastHour,
     };
   }
 
@@ -83,5 +114,6 @@ export function aggregateStatus(
     lastReportAt: freshest.created_at,
     minutesAgo: Math.round(freshestAgeMinutes),
     peopleCount: freshest.people_count,
+    reportsLastHour,
   };
 }
