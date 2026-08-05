@@ -6,6 +6,14 @@ function pluralReports(count: number): string {
   return "отметок";
 }
 
+function pluralPeople(count: number): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return "человек";
+  if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return "человека";
+  return "человек";
+}
+
 export const ru = {
   appTitle: "Очередь за здоровьем",
   appTagline: "Загруженность травмпунктов и поликлиник — в реальном времени",
@@ -80,7 +88,8 @@ export const ru = {
       "Отмечай, если сейчас в очереди — это займёт секунду",
       "Помогай другим ехать туда, где короче ждать",
     ],
-    cta: "Перейти к карте",
+    cta: "Посмотреть очередь сейчас",
+    todayCount: (count: number) => `Сегодня отметилось ${count} ${pluralPeople(count)}`,
   },
 } as const;
 
