@@ -11,9 +11,9 @@ const LEVEL_SCORE: Record<LoadLevel, number> = { low: 1, medium: 2, high: 3 };
 const SCORE_LEVEL: LoadLevel[] = ["low", "medium", "high"]; // index 0 => score 1
 
 export type AggregatedStatus =
-  | { status: LoadLevel; lastReportAt: string; minutesAgo: number }
-  | { status: "stale"; lastReportAt: string; minutesAgo: number }
-  | { status: "no-data"; lastReportAt: null; minutesAgo: null };
+  | { status: LoadLevel; lastReportAt: string; minutesAgo: number; peopleCount: number | null }
+  | { status: "stale"; lastReportAt: string; minutesAgo: number; peopleCount: number | null }
+  | { status: "no-data"; lastReportAt: null; minutesAgo: null; peopleCount: null };
 
 function ageMinutes(createdAt: string, now: number): number {
   return Math.max(0, (now - new Date(createdAt).getTime()) / 60000);
@@ -57,7 +57,7 @@ export function aggregateStatus(
   now: number = Date.now()
 ): AggregatedStatus {
   if (reports.length === 0) {
-    return { status: "no-data", lastReportAt: null, minutesAgo: null };
+    return { status: "no-data", lastReportAt: null, minutesAgo: null, peopleCount: null };
   }
 
   const freshest = reports.reduce((latest, r) =>
@@ -74,6 +74,7 @@ export function aggregateStatus(
       status: weightedMedianLevel(recent, now),
       lastReportAt: freshest.created_at,
       minutesAgo: Math.round(freshestAgeMinutes),
+      peopleCount: freshest.people_count,
     };
   }
 
@@ -81,5 +82,6 @@ export function aggregateStatus(
     status: "stale",
     lastReportAt: freshest.created_at,
     minutesAgo: Math.round(freshestAgeMinutes),
+    peopleCount: freshest.people_count,
   };
 }

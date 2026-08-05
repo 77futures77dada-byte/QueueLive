@@ -2,19 +2,31 @@
 
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useState } from "react";
-import { MapContainer, TileLayer } from "react-leaflet";
+import { MapContainer, TileLayer, useMapEvents } from "react-leaflet";
 import { supabase } from "@/lib/supabase";
 import { LocationMarker } from "@/components/LocationMarker";
 import { aggregateStatus, STALE_THRESHOLD_MINUTES } from "@/lib/aggregateStatus";
 import type { Location, QueueReport } from "@/types/database";
 
 const TALLINN_CENTER: [number, number] = [59.437, 24.7536];
+const DEFAULT_ZOOM = 12;
 const STATUS_REFRESH_MS = 60_000;
+
+/** Reports the current zoom level up to the parent so markers can switch
+ * between the full badge and a plain dot without prop-drilling a Leaflet
+ * map instance around. */
+function ZoomWatcher({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
+  useMapEvents({
+    zoomend: (e) => onZoomChange(e.target.getZoom()),
+  });
+  return null;
+}
 
 export function Map() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [reports, setReports] = useState<QueueReport[]>([]);
   const [now, setNow] = useState(() => Date.now());
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,10 +97,11 @@ export function Map() {
   return (
     <MapContainer
       center={TALLINN_CENTER}
-      zoom={12}
+      zoom={DEFAULT_ZOOM}
       className="h-full w-full"
       scrollWheelZoom
     >
+      <ZoomWatcher onZoomChange={setZoom} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -98,6 +111,7 @@ export function Map() {
           key={location.id}
           location={location}
           status={aggregateStatus(reportsByLocation[location.id] ?? [], now)}
+          zoom={zoom}
         />
       ))}
     </MapContainer>

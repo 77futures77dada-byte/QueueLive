@@ -1,17 +1,14 @@
 "use client";
 
 import L from "leaflet";
+import { useEffect, useRef } from "react";
 import { Marker, Popup } from "react-leaflet";
 import { ReportButtons } from "@/components/ReportButtons";
 import { t } from "@/lib/i18n";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
 import type { Location } from "@/types/database";
 
-// Status reads through color + opacity on a familiar medical-pin shape, not
-// size — a pin that visibly grows with "how bad" reads as alarming, which
-// runs against the calm, trustworthy tone this needs for someone already
-// stressed about an injury.
-const STATUS_FILL: Record<AggregatedStatus["status"], string> = {
+const STATUS_COLOR: Record<AggregatedStatus["status"], string> = {
   low: "var(--status-low)",
   medium: "var(--status-medium)",
   high: "var(--status-high)",
@@ -19,47 +16,83 @@ const STATUS_FILL: Record<AggregatedStatus["status"], string> = {
   "no-data": "var(--muted)",
 };
 
-const PIN_WIDTH = 30;
-const PIN_HEIGHT = 38;
+/** Below this zoom, badges collapse to plain dots so nearby markers don't
+ * turn into a wall of overlapping text. */
+export const BADGE_ZOOM_THRESHOLD = 13;
 
-function buildIcon(status: AggregatedStatus["status"]) {
-  const fill = STATUS_FILL[status];
-  const isFaded = status === "stale" || status === "no-data";
-  const opacity = isFaded ? 0.55 : 1;
-  const pulseRing =
-    status === "high"
-      ? `<circle class="marker-pulse-ring" cx="15" cy="15" r="9" fill="${fill}"></circle>`
+const BADGE_SIZE: [number, number] = [46, 30];
+const DOT_SIZE: [number, number] = [14, 14];
+
+function badgeText(status: AggregatedStatus): string {
+  if (status.peopleCount !== null) return `~${status.peopleCount}`;
+  return t.statusShort[status.status];
+}
+
+function buildIcon(status: AggregatedStatus, zoom: number) {
+  const color = STATUS_COLOR[status.status];
+  const isFaded = status.status === "stale" || status.status === "no-data";
+  const opacity = isFaded ? 0.6 : 1;
+
+  if (zoom < BADGE_ZOOM_THRESHOLD) {
+    const [w, h] = DOT_SIZE;
+    const html = `
+      <div style="width:${w}px;height:${h}px;border-radius:9999px;background:${color};opacity:${opacity};border:2px solid white;box-shadow:0 1px 3px rgba(51,50,46,0.35)"></div>
+    `;
+    return L.divIcon({
+      html,
+      className: "",
+      iconSize: [w, h],
+      iconAnchor: [w / 2, h / 2],
+      popupAnchor: [0, -h / 2],
+    });
+  }
+
+  const [w, h] = BADGE_SIZE;
+  const pulse =
+    status.status === "high"
+      ? `<span style="position:absolute;inset:-4px;border-radius:9999px;background:${color};opacity:0.35;animation:soft-pulse-ring 2s ease-out infinite"></span>`
       : "";
 
   const html = `
-    <svg width="${PIN_WIDTH}" height="${PIN_HEIGHT}" viewBox="0 0 30 38" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 3px rgba(51,50,46,0.3))">
-      ${pulseRing}
-      <path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 23 15 23s15-12.5 15-23C30 6.716 23.284 0 15 0z" fill="${fill}" opacity="${opacity}" />
-      <circle cx="15" cy="15" r="7" fill="white" opacity="${opacity}" />
-      <rect x="12.5" y="10.5" width="5" height="9" rx="1.5" fill="${fill}" opacity="${opacity}" />
-      <rect x="10.5" y="12.5" width="9" height="5" rx="1.5" fill="${fill}" opacity="${opacity}" />
-    </svg>
+    <div style="position:relative;width:${w}px;height:${h}px;display:flex;align-items:center;justify-content:center">
+      ${pulse}
+      <div style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:24px;border-radius:9999px;background:${color};opacity:${opacity};box-shadow:0 2px 6px rgba(51,50,46,0.3);color:white;font-family:var(--font-humanist),system-ui,sans-serif;font-size:11px;font-weight:600;line-height:1;padding:0 6px;white-space:nowrap">
+        ${badgeText(status)}
+      </div>
+      <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid ${color};opacity:${opacity}"></div>
+    </div>
   `;
 
   return L.divIcon({
     html,
     className: "",
-    iconSize: [PIN_WIDTH, PIN_HEIGHT],
-    iconAnchor: [PIN_WIDTH / 2, PIN_HEIGHT],
-    popupAnchor: [0, -PIN_HEIGHT + 4],
+    iconSize: [w, h],
+    iconAnchor: [w / 2, h],
+    popupAnchor: [0, -h + 2],
   });
 }
 
 interface Props {
   location: Location;
   status: AggregatedStatus;
+  zoom: number;
+  isSelected?: boolean;
+  onOpen?: () => void;
 }
 
-export function LocationMarker({ location, status }: Props) {
+export function LocationMarker({ location, status, zoom, isSelected, onOpen }: Props) {
+  const markerRef = useRef<L.Marker>(null);
+
+  useEffect(() => {
+    if (isSelected) markerRef.current?.openPopup();
+  }, [isSelected]);
+
   return (
     <Marker
+      ref={markerRef}
       position={[location.lat, location.lng]}
-      icon={buildIcon(status.status)}
+      icon={buildIcon(status, zoom)}
+      eventHandlers={{ popupopen: () => onOpen?.() }}
     >
       <Popup minWidth={260}>
         <div className="flex flex-col gap-3 p-4">

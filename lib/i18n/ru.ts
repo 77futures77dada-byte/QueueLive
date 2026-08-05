@@ -17,6 +17,16 @@ export const ru = {
     "no-data": "Нет данных",
   },
 
+  // Short glanceable labels for the map badge — the full words above are
+  // too wide to fit in a pill marker.
+  statusShort: {
+    low: "мало",
+    medium: "есть",
+    high: "много",
+    stale: "?",
+    "no-data": "—",
+  },
+
   report: {
     prompt: "Как сейчас в очереди?",
     submit: "Отправить",
