@@ -1,6 +1,6 @@
 export const ru = {
-  appTitle: "QueueLive",
-  appTagline: "Живая загруженность очередей на карте",
+  appTitle: "Куда сейчас",
+  appTagline: "Загруженность травмпунктов и поликлиник — в реальном времени",
 
   locationType: {
     hospital: "Больница / травмпункт",

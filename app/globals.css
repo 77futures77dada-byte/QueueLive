@@ -2,58 +2,57 @@
 
 :root {
   --paper: #ffffff;
-  --ink: #000000;
-  --alarm: #ff2400;
-  --muted: #6b6b6b;
-  --muted-bg: #e5e5e5;
+  --surface: #f5f8fb;
+  --ink: #33322e;
+  --muted: #7a776f;
+  --muted-bg: #e9ebee;
+  --primary: #3e6fa5;
+  --primary-tint: #eaf1f8;
+  --status-low: #5f9d78;
+  --status-medium: #d1a13f;
+  --status-high: #c96b62;
 }
 
 @theme inline {
   --color-paper: var(--paper);
+  --color-surface: var(--surface);
   --color-ink: var(--ink);
-  --color-alarm: var(--alarm);
   --color-muted: var(--muted);
   --color-muted-bg: var(--muted-bg);
-  --font-sans: var(--font-brutal);
-  --font-mono: var(--font-brutal);
-  --radius-none: 0px;
-}
-
-* {
-  border-radius: 0 !important;
+  --color-primary: var(--primary);
+  --color-primary-tint: var(--primary-tint);
+  --color-status-low: var(--status-low);
+  --color-status-medium: var(--status-medium);
+  --color-status-high: var(--status-high);
+  --font-sans: var(--font-humanist);
 }
 
 body {
-  background: var(--paper);
+  background: var(--surface);
   color: var(--ink);
-  font-family: var(--font-brutal), monospace;
+  font-family: var(--font-humanist), system-ui, sans-serif;
 }
 
-/* Leaflet chrome, forced into the same brutalist register: square, flat,
-   no shadow. Leaflet ships its own rounded/shadowed defaults via CSS that
-   Tailwind's `rounded-none`/`shadow-none` utilities can't reach because
-   they're not applied via class on those internal elements. */
 .leaflet-container {
-  background: var(--muted-bg);
-  font-family: var(--font-brutal), monospace;
+  background: var(--surface);
+  font-family: var(--font-humanist), system-ui, sans-serif;
 }
 
 .leaflet-control-zoom a,
 .leaflet-control-zoom {
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  border: 2px solid var(--ink) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 8px rgba(51, 50, 46, 0.12) !important;
+  border: none !important;
 }
 
 .leaflet-control-zoom a {
-  color: var(--ink) !important;
-  font-weight: 700;
+  color: var(--primary) !important;
 }
 
 .leaflet-popup-content-wrapper {
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  border: 3px solid var(--ink);
+  border-radius: 16px !important;
+  box-shadow: 0 8px 24px rgba(51, 50, 46, 0.16) !important;
+  border: none;
   padding: 0;
 }
 
@@ -63,27 +62,30 @@ body {
 }
 
 .leaflet-popup-tip {
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  background: var(--ink) !important;
+  box-shadow: 0 4px 10px rgba(51, 50, 46, 0.1) !important;
+  background: var(--paper) !important;
 }
 
 .leaflet-popup-close-button {
-  color: var(--ink) !important;
-  font-size: 20px !important;
-  font-weight: 700;
+  color: var(--muted) !important;
+  font-size: 18px !important;
 }
 
-@keyframes alarm-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
+/* Soft "radar" ping around markers that need urgent attention — a gentle,
+   continuous cue rather than an attention-grabbing blink. */
+@keyframes soft-pulse-ring {
+  0% {
+    transform: scale(0.8);
     opacity: 0.45;
   }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
 }
 
-.marker-alarm {
-  animation: alarm-pulse 1s step-start infinite;
+.marker-pulse-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: soft-pulse-ring 2s ease-out infinite;
 }

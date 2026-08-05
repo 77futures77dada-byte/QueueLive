@@ -12,17 +12,17 @@ const LEVELS: { level: LoadLevel; label: string; className: string }[] = [
   {
     level: "low",
     label: t.status.low,
-    className: "border-ink bg-paper text-ink hover:bg-ink hover:text-paper",
+    className: "bg-status-low/15 text-status-low hover:bg-status-low/25",
   },
   {
     level: "medium",
     label: t.status.medium,
-    className: "border-ink bg-ink text-paper hover:bg-paper hover:text-ink",
+    className: "bg-status-medium/15 text-status-medium hover:bg-status-medium/25",
   },
   {
     level: "high",
     label: t.status.high,
-    className: "border-ink bg-alarm text-paper hover:bg-paper hover:text-alarm",
+    className: "bg-status-high/15 text-status-high hover:bg-status-high/25",
   },
 ];
 
@@ -80,7 +80,7 @@ export function ReportButtons({ location, onSubmitted }: Props) {
 
   if (state.phase === "success") {
     return (
-      <p className="border-2 border-ink bg-ink px-2 py-1 text-sm font-bold text-paper uppercase">
+      <p className="rounded-xl bg-primary-tint px-3 py-2 text-sm font-medium text-primary">
         {t.report.success}
       </p>
     );
@@ -90,22 +90,22 @@ export function ReportButtons({ location, onSubmitted }: Props) {
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm font-bold uppercase">{t.report.prompt}</p>
-      <div className="flex flex-col gap-1.5">
+      <p className="text-sm font-medium text-ink">{t.report.prompt}</p>
+      <div className="flex flex-col gap-2">
         {LEVELS.map(({ level, label, className }) => (
           <button
             key={level}
             type="button"
             disabled={busy}
             onClick={() => handleReport(level)}
-            className={`border-2 px-3 py-1.5 text-sm font-bold uppercase disabled:opacity-40 ${className}`}
+            className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-colors duration-200 disabled:opacity-50 ${className}`}
           >
             {busy ? t.report.submitting : label}
           </button>
         ))}
       </div>
       {state.phase === "error" && (
-        <p className="border-2 border-alarm px-2 py-1 text-sm font-bold text-alarm uppercase">
+        <p className="rounded-xl bg-status-high/15 px-3 py-2 text-sm text-status-high">
           {state.message}
         </p>
       )}
