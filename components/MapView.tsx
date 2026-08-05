@@ -131,7 +131,7 @@ export function MapView() {
           onSelectLocation={setSelectedLocationId}
         />
       </div>
-      <div className="order-2 h-[45vh] md:order-1 md:h-full">
+      <div className="order-2 h-[45vh] md:order-1 md:h-full md:w-[35%] md:shrink-0">
         <Sidebar
           locations={locations}
           statusByLocation={statusByLocation}

@@ -43,6 +43,7 @@ export function Sidebar({
   const [sortMode, setSortMode] = useState<SortMode>("status");
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [geoError, setGeoError] = useState(false);
+  const [query, setQuery] = useState("");
 
   function handleSortByDistance() {
     setSortMode("distance");
@@ -59,7 +60,11 @@ export function Sidebar({
   }
 
   const sorted = useMemo(() => {
-    const list = [...locations];
+    const normalizedQuery = query.trim().toLowerCase();
+    const list = normalizedQuery
+      ? locations.filter((l) => l.name.toLowerCase().includes(normalizedQuery))
+      : [...locations];
+
     if (sortMode === "distance" && userPos) {
       list.sort((a, b) => distanceMeters(userPos, a) - distanceMeters(userPos, b));
     } else {
@@ -70,10 +75,20 @@ export function Sidebar({
       });
     }
     return list;
-  }, [locations, sortMode, userPos, statusByLocation]);
+  }, [locations, sortMode, userPos, statusByLocation, query]);
 
   return (
-    <aside className="flex h-full w-full flex-col bg-paper md:w-80 md:shrink-0 md:border-r md:border-black/5">
+    <aside className="flex h-full w-full flex-col bg-paper md:border-r md:border-black/5">
+      <div className="border-b border-black/5 px-4 py-3">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t.sidebar.searchPlaceholder}
+          className="w-full rounded-full bg-surface px-4 py-2 text-sm text-ink placeholder:text-muted focus:outline-primary"
+        />
+      </div>
+
       <div className="flex gap-2 border-b border-black/5 px-4 py-3">
         <button
           type="button"
@@ -101,6 +116,10 @@ export function Sidebar({
 
       {sortMode === "distance" && geoError && (
         <p className="px-4 py-2 text-xs text-status-high">{t.sidebar.distanceUnavailable}</p>
+      )}
+
+      {sorted.length === 0 && (
+        <p className="px-4 py-3 text-sm text-muted">{t.sidebar.noResults}</p>
       )}
 
       <ul className="flex-1 divide-y divide-black/5 overflow-y-auto">

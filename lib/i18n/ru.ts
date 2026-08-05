@@ -67,9 +67,11 @@ export const ru = {
   },
 
   sidebar: {
+    searchPlaceholder: "Поиск по названию",
     sortByStatus: "По статусу",
     sortByDistance: "По расстоянию",
     distanceUnavailable: "Не удалось определить геолокацию для сортировки по расстоянию.",
+    noResults: "Ничего не найдено",
   },
 
   notes: {
