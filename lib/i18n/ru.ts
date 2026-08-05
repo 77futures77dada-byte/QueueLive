@@ -30,7 +30,7 @@ export const ru = {
     medium: "Есть очередь",
     high: "Долгое ожидание",
     stale: "Данные устарели",
-    "no-data": "Нет данных",
+    "no-data": "Пока никто не отмечался",
   },
 
   // Short glanceable labels for the map badge — the full words above are
@@ -47,9 +47,9 @@ export const ru = {
     prompt: "Как сейчас в очереди?",
     submit: "Отправить",
     submitting: "Отправка…",
-    success: "Спасибо! Отметка сохранена.",
+    success: "Спасибо! Вы помогли следующим посетителям.",
     updatedAgo: (minutes: number) => `Обновлено ${minutes} мин. назад`,
-    neverReported: "Отметок ещё не было",
+    neverReported: "Будь первым, кто оставит отметку",
     reportsCountLastHour: (count: number) =>
       count < 3 ? "мало данных" : `${count} ${pluralReports(count)} за час`,
   },
