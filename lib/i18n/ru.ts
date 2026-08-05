@@ -83,6 +83,11 @@ export const ru = {
     empty: "Заметок пока нет",
   },
 
+  location: {
+    getDirections: "Проложить маршрут",
+    call: "Позвонить",
+  },
+
   landing: {
     trustNote: "Статус обновляют сами посетители в реальном времени",
     points: [

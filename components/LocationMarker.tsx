@@ -103,6 +103,28 @@ export function LocationMarker({ location, status, notes, zoom, isSelected, onOp
               {location.name}
             </p>
             <p className="text-sm text-muted">{t.locationType[location.type]}</p>
+            {location.address && (
+              <p className="mt-1 text-sm text-muted">{location.address}</p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full bg-primary-tint px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary-tint/70"
+            >
+              {t.location.getDirections}
+            </a>
+            {location.phone && (
+              <a
+                href={`tel:${location.phone}`}
+                className="rounded-full bg-primary-tint px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary-tint/70"
+              >
+                {t.location.call} {location.phone}
+              </a>
+            )}
           </div>
 
           <p className="rounded-xl bg-primary-tint px-3 py-2 text-sm text-ink">

@@ -15,6 +15,8 @@ export interface Database {
           lat: number;
           lng: number;
           city: string;
+          address: string | null;
+          phone: string | null;
           created_at: string;
         };
         Insert: {
@@ -24,6 +26,8 @@ export interface Database {
           lat: number;
           lng: number;
           city?: string;
+          address?: string | null;
+          phone?: string | null;
           created_at?: string;
         };
         Update: {
@@ -33,6 +37,8 @@ export interface Database {
           lat?: number;
           lng?: number;
           city?: string;
+          address?: string | null;
+          phone?: string | null;
           created_at?: string;
         };
         Relationships: [];
