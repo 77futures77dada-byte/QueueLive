@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Куда сейчас",
+  title: "Очередь за здоровьем",
   description: "Загруженность травмпунктов и поликлиник — в реальном времени",
 };
 

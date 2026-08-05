@@ -1,5 +1,5 @@
 export const ru = {
-  appTitle: "Куда сейчас",
+  appTitle: "Очередь за здоровьем",
   appTagline: "Загруженность травмпунктов и поликлиник — в реальном времени",
 
   locationType: {
