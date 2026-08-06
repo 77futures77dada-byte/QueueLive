@@ -1,8 +1,8 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
-import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { useEffect } from "react";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import { LocationMarker } from "@/components/LocationMarker";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
 import type { Location, LocationNote } from "@/types/database";
@@ -10,16 +10,6 @@ import type { Location, LocationNote } from "@/types/database";
 const TALLINN_CENTER: [number, number] = [59.437, 24.7536];
 const DEFAULT_ZOOM = 12;
 const SELECTED_ZOOM = 15;
-
-/** Reports the current zoom level up to the parent so markers can switch
- * between the full badge and a plain dot without prop-drilling a Leaflet
- * map instance around. */
-function ZoomWatcher({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
-  useMapEvents({
-    zoomend: (e) => onZoomChange(e.target.getZoom()),
-  });
-  return null;
-}
 
 /** Leaflet reads its container's size once at construction and otherwise
  * only reacts to `window` resize events. It doesn't notice when its own
@@ -70,7 +60,6 @@ export function Map({
   selectedLocationId,
   onSelectLocation,
 }: Props) {
-  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const selectedLocation = locations.find((l) => l.id === selectedLocationId);
 
   return (
@@ -80,7 +69,6 @@ export function Map({
       className="h-full w-full"
       scrollWheelZoom
     >
-      <ZoomWatcher onZoomChange={setZoom} />
       <AutoInvalidateSize />
       <FlyToSelection location={selectedLocation} />
       <TileLayer
@@ -93,7 +81,6 @@ export function Map({
           location={location}
           status={statusByLocation[location.id]}
           notes={notesByLocation[location.id] ?? []}
-          zoom={zoom}
           isSelected={location.id === selectedLocationId}
           onOpen={() => onSelectLocation(location.id)}
         />
