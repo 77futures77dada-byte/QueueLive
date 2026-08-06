@@ -33,12 +33,25 @@ export function Landing({ onEnter }: Props) {
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-between bg-surface px-6 py-12 text-center">
-      <div />
+    <div className="relative flex flex-1 flex-col items-center justify-between overflow-hidden bg-surface px-6 py-12 text-center">
+      {/* Decorative medical cross — a generic plus, not any organization's
+          mark. Purely background texture: kept low-opacity and behind the
+          content (z-0 vs. the content's z-10) so it never competes with
+          text for attention or contrast. */}
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 100 100"
+        className="pointer-events-none absolute top-1/2 left-1/2 z-0 h-[65vmin] w-[65vmin] -translate-x-1/2 -translate-y-1/2 text-red-600 opacity-[0.06]"
+      >
+        <rect x="38" y="4" width="24" height="92" rx="1.5" fill="currentColor" />
+        <rect x="4" y="38" width="92" height="24" rx="1.5" fill="currentColor" />
+      </svg>
 
-      <div className="flex max-w-md flex-col items-center gap-8">
+      <div className="relative z-10" />
+
+      <div className="relative z-10 flex max-w-md flex-col items-center gap-8">
         <div>
-          <h1 className="text-4xl leading-tight font-semibold text-primary">
+          <h1 className="text-4xl leading-tight font-medium tracking-wide text-primary">
             {t.appTitle}
           </h1>
           <p className="mt-3 text-base text-muted">{t.appTagline}</p>
@@ -65,7 +78,7 @@ export function Landing({ onEnter }: Props) {
       <button
         type="button"
         onClick={onEnter}
-        className="flex items-center gap-2 rounded-full bg-primary px-8 py-3.5 text-base font-medium text-paper transition-colors duration-200 hover:bg-primary/90"
+        className="relative z-10 flex items-center gap-2 rounded-full bg-primary px-8 py-3.5 text-base font-medium text-paper transition-colors duration-200 hover:bg-primary/90"
       >
         {t.landing.cta}
         <span aria-hidden>→</span>

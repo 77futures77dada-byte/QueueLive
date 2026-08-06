@@ -32,12 +32,24 @@
 body {
   background: var(--surface);
   color: var(--ink);
-  font-family: var(--font-humanist), system-ui, sans-serif;
+  font-family:
+    var(--font-humanist),
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Inter,
+    sans-serif;
 }
 
 .leaflet-container {
   background: var(--surface);
-  font-family: var(--font-humanist), system-ui, sans-serif;
+  font-family:
+    var(--font-humanist),
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Inter,
+    sans-serif;
 }
 
 .leaflet-control-zoom a,
