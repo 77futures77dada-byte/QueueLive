@@ -1,23 +1,10 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { dictionaries, LOCALES, type Locale } from "@/lib/i18n";
+import { dictionaries, type Locale } from "@/lib/i18n";
 
 const STORAGE_KEY = "queuelive_locale";
-
-// Priority order for auto-detecting from the browser when there's no saved
-// preference: Estonian first (the app's home market), then Russian (the
-// largest minority language here), then English as the catch-all.
-function detectLocale(): Locale {
-  if (typeof navigator === "undefined") return "et";
-  const browserLangs = navigator.languages ?? [navigator.language];
-  for (const preferred of LOCALES) {
-    if (browserLangs.some((lang) => lang.toLowerCase().startsWith(preferred))) {
-      return preferred;
-    }
-  }
-  return "en";
-}
+const DEFAULT_LOCALE: Locale = "et";
 
 interface LocaleContextValue {
   locale: Locale;
@@ -28,16 +15,22 @@ interface LocaleContextValue {
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("et");
+  // No browser-language auto-detection — first-visit default is always
+  // Estonian, regardless of navigator.language. A saved preference (the
+  // user having switched languages themselves before) still wins.
+  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
 
   useEffect(() => {
-    // Reads browser-only state (localStorage/navigator.languages) that isn't
-    // available during SSR, so the real locale can only be known after the
-    // first client render — this one-time sync-on-mount is the standard
-    // exception to "don't setState in an effect".
+    // Reads localStorage, which isn't available during SSR, so a saved
+    // preference can only be known after the first client render — this
+    // one-time sync-on-mount is the standard exception to "don't setState
+    // in an effect". If there's no saved preference, the default set above
+    // already stands, so there's nothing to do.
     const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocaleState(stored && stored in dictionaries ? (stored as Locale) : detectLocale());
+    if (stored && stored in dictionaries) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLocaleState(stored as Locale);
+    }
   }, []);
 
   useEffect(() => {

@@ -124,6 +124,8 @@ export const ru = {
     ],
     cta: "Посмотреть очередь сейчас",
     todayCount: (count: number) => `Сегодня отметилось ${count} ${pluralPeople(count)}`,
+    live: "Реальное время",
+    cityLabel: "Таллин, Эстония",
   },
 
   chat: {

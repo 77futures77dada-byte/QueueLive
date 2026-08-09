@@ -120,6 +120,8 @@ export const et = {
     ],
     cta: "Vaata järjekorda kohe",
     todayCount: (count: number) => `Täna märkis end ${count} ${pluralPeople(count)}`,
+    live: "Reaalajas",
+    cityLabel: "Tallinn, Eesti",
   },
 
   chat: {

@@ -120,6 +120,8 @@ export const en = {
     ],
     cta: "See the queue now",
     todayCount: (count: number) => `${count} ${pluralPeople(count)} checked in today`,
+    live: "Live",
+    cityLabel: "Tallinn, Estonia",
   },
 
   chat: {
