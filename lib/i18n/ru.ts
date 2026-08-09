@@ -77,6 +77,8 @@ export const ru = {
     distanceUnavailable: "Не удалось определить геолокацию для сортировки по расстоянию.",
     noResults: "Ничего не найдено",
     showDepartments: "Показать направления",
+    mapTab: "Карта",
+    listTab: "Список",
   },
 
   notes: {
@@ -93,6 +95,7 @@ export const ru = {
   location: {
     getDirections: "Проложить маршрут",
     call: "Позвонить",
+    close: "Закрыть",
   },
 
   confirmation: {

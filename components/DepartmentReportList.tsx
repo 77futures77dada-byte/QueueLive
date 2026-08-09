@@ -66,14 +66,14 @@ function DepartmentRow({ location, department }: RowProps) {
       {state.phase === "success" ? (
         <p className="text-xs font-medium text-primary">{t.report.success}</p>
       ) : (
-        <div className="flex gap-1.5 pl-4.5">
+        <div className="flex flex-wrap gap-1.5 pl-4.5">
           {LEVELS.map(({ level, label, className }) => (
             <button
               key={level}
               type="button"
               disabled={busy}
               onClick={() => submit(level, department.id)}
-              className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors duration-200 disabled:opacity-50 ${className}`}
+              className={`min-h-11 min-w-11 shrink-0 rounded-full px-3 text-xs font-medium transition-colors duration-200 disabled:opacity-50 ${className}`}
             >
               {label}
             </button>

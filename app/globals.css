@@ -27,6 +27,29 @@
   --color-status-medium: var(--status-medium);
   --color-status-high: var(--status-high);
   --font-sans: var(--font-humanist);
+
+  /* One fluid scale, defined once, that every `text-*` utility in the app
+     already draws from — no per-component clamp() one-offs. Designed
+     mobile-first: each step's low bound is what a 375px screen gets, the
+     high bound is what 1440px+ gets, and `text-base`'s floor is exactly
+     1rem (16px) — the minimum for readable body copy and the threshold
+     that keeps iOS Safari from auto-zooming into focused inputs. */
+  --text-xs: clamp(0.75rem, 0.72rem + 0.15vw, 0.8125rem);
+  --text-xs--line-height: 1.5;
+  --text-sm: clamp(0.875rem, 0.84rem + 0.18vw, 0.9375rem);
+  --text-sm--line-height: 1.55;
+  --text-base: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
+  --text-base--line-height: 1.6;
+  --text-lg: clamp(1.125rem, 1.06rem + 0.3vw, 1.25rem);
+  --text-lg--line-height: 1.5;
+  --text-xl: clamp(1.25rem, 1.15rem + 0.5vw, 1.5rem);
+  --text-xl--line-height: 1.4;
+  --text-2xl: clamp(1.5rem, 1.3rem + 1vw, 1.875rem);
+  --text-2xl--line-height: 1.3;
+  --text-3xl: clamp(1.75rem, 1.4rem + 1.5vw, 2.25rem);
+  --text-3xl--line-height: 1.25;
+  --text-4xl: clamp(2rem, 1.4rem + 2.5vw, 3.5rem);
+  --text-4xl--line-height: 1.15;
 }
 
 body {
@@ -59,8 +82,13 @@ body {
   border: none !important;
 }
 
+/* Leaflet's default zoom buttons are ~26px — well under the 44px touch
+   target minimum. */
 .leaflet-control-zoom a {
   color: var(--primary) !important;
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
 }
 
 .leaflet-popup-content-wrapper {
@@ -83,6 +111,21 @@ body {
 .leaflet-popup-close-button {
   color: var(--muted) !important;
   font-size: 18px !important;
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+}
+
+/* Below md, LocationDetailSheet (a fixed bottom sheet driven by the same
+   selectedLocationId state) takes over the marker-detail UI instead of
+   Leaflet's own anchored popup — a popup pinned to a marker can't behave
+   like a full-width slide-up sheet, so rather than fight Leaflet's
+   positioning we just hide its popup on small screens and let the sheet
+   render the same content. */
+@media (max-width: 767px) {
+  .leaflet-popup {
+    display: none !important;
+  }
 }
 
 /* Soft "radar" ping around markers that need urgent attention — a gentle,
@@ -102,4 +145,20 @@ body {
   transform-box: fill-box;
   transform-origin: center;
   animation: soft-pulse-ring 2s ease-out infinite;
+}
+
+/* LocationDetailSheet's entrance — the standard mobile-map pattern
+   (Google Maps, Waze) of a panel sliding up from the bottom edge instead
+   of a small popup anchored to the tapped marker. */
+@keyframes sheet-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.sheet-slide-up {
+  animation: sheet-slide-up 0.25s ease-out;
 }

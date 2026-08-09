@@ -81,7 +81,7 @@ export function BestOptionBanner({ locations, statusByLocation }: Props) {
         href={`https://www.google.com/maps/dir/?api=1&destination=${best.lat},${best.lng}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="rounded-full bg-primary px-4 py-2 text-xs font-medium text-paper transition-colors duration-200 hover:bg-primary/90"
+        className="flex min-h-11 items-center rounded-full bg-primary px-4 text-xs font-medium text-paper transition-colors duration-200 hover:bg-primary/90"
       >
         {t.location.getDirections}
       </a>

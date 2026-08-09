@@ -90,7 +90,7 @@ export function Sidebar({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t.sidebar.searchPlaceholder}
-          className="w-full rounded-full bg-surface px-4 py-2 text-sm text-ink placeholder:text-muted focus:outline-primary"
+          className="min-h-11 w-full rounded-full bg-surface px-4 text-base text-ink placeholder:text-muted focus:outline-primary"
         />
       </div>
 
@@ -98,7 +98,7 @@ export function Sidebar({
         <button
           type="button"
           onClick={() => setSortMode("status")}
-          className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors duration-200 ${
+          className={`min-h-11 rounded-full px-3 text-xs font-medium transition-colors duration-200 ${
             sortMode === "status"
               ? "bg-primary text-paper"
               : "bg-primary-tint text-primary hover:bg-primary-tint/70"
@@ -109,7 +109,7 @@ export function Sidebar({
         <button
           type="button"
           onClick={handleSortByDistance}
-          className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors duration-200 ${
+          className={`min-h-11 rounded-full px-3 text-xs font-medium transition-colors duration-200 ${
             sortMode === "distance"
               ? "bg-primary text-paper"
               : "bg-primary-tint text-primary hover:bg-primary-tint/70"
@@ -177,7 +177,7 @@ export function Sidebar({
                     }}
                     aria-expanded={isExpanded}
                     aria-label={t.sidebar.showDepartments}
-                    className="shrink-0 px-3 py-3 text-muted hover:text-primary"
+                    className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-muted hover:text-primary"
                   >
                     <span
                       aria-hidden

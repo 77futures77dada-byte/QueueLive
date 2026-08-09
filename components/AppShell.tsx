@@ -18,14 +18,20 @@ export function AppShell() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-start justify-between gap-3 border-b border-black/5 bg-paper px-5 py-4 shadow-sm">
-        <div>
-          <h1 className="text-2xl leading-tight font-semibold text-primary">
+      <header className="flex items-start justify-between gap-3 border-b border-black/5 bg-paper px-4 py-3 shadow-sm sm:px-5 sm:py-4">
+        {/* min-w-0 + truncate: appTitle is a single unbroken word in
+            Estonian ("Tervishoiujärjekord") that can't wrap, so without
+            this it would overflow the header and push the language
+            switcher off-screen on a narrow viewport. */}
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-2xl leading-tight font-semibold text-primary">
             {t.appTitle}
           </h1>
-          <p className="mt-1 text-sm text-muted">{t.appTagline}</p>
+          <p className="mt-1 truncate text-sm text-muted">{t.appTagline}</p>
         </div>
-        <LanguageSwitcher />
+        <div className="shrink-0">
+          <LanguageSwitcher />
+        </div>
       </header>
       <Legend />
       {/* relative + z-0 gives Leaflet's internal panes/controls (which use

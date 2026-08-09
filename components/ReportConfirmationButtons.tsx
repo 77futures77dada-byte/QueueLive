@@ -20,12 +20,12 @@ export function ReportConfirmationButtons({ reportId }: Props) {
   }
 
   return (
-    <div className="flex gap-1.5">
+    <div className="flex flex-wrap gap-1.5">
       <button
         type="button"
         disabled={busy}
         onClick={() => vote(true)}
-        className="rounded-full bg-surface px-2 py-0.5 text-xs text-muted transition-colors duration-200 hover:bg-black/5 disabled:opacity-50"
+        className="min-h-11 rounded-full bg-surface px-3 text-xs text-muted transition-colors duration-200 hover:bg-black/5 disabled:opacity-50"
       >
         👍 {t.confirmation.stillAccurate}
       </button>
@@ -33,7 +33,7 @@ export function ReportConfirmationButtons({ reportId }: Props) {
         type="button"
         disabled={busy}
         onClick={() => vote(false)}
-        className="rounded-full bg-surface px-2 py-0.5 text-xs text-muted transition-colors duration-200 hover:bg-black/5 disabled:opacity-50"
+        className="min-h-11 rounded-full bg-surface px-3 text-xs text-muted transition-colors duration-200 hover:bg-black/5 disabled:opacity-50"
       >
         👎 {t.confirmation.noLongerAccurate}
       </button>

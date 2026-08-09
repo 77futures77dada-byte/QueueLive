@@ -73,6 +73,8 @@ export const en = {
     distanceUnavailable: "Couldn't get your location to sort by distance.",
     noResults: "Nothing found",
     showDepartments: "Show departments",
+    mapTab: "Map",
+    listTab: "List",
   },
 
   notes: {
@@ -89,6 +91,7 @@ export const en = {
   location: {
     getDirections: "Get directions",
     call: "Call",
+    close: "Close",
   },
 
   confirmation: {

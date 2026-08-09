@@ -73,6 +73,8 @@ export const et = {
     distanceUnavailable: "Kauguse järgi sortimiseks ei õnnestunud asukohta tuvastada.",
     noResults: "Midagi ei leitud",
     showDepartments: "Näita osakondi",
+    mapTab: "Kaart",
+    listTab: "Nimekiri",
   },
 
   notes: {
@@ -89,6 +91,7 @@ export const et = {
   location: {
     getDirections: "Kuva teekond",
     call: "Helista",
+    close: "Sulge",
   },
 
   confirmation: {

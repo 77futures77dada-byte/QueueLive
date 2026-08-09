@@ -56,11 +56,11 @@ export function NoteComposer({ location, onSubmitted }: Props) {
         placeholder={t.notes.placeholder}
         rows={2}
         disabled={busy}
-        className="rounded-xl border border-black/10 bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:outline-primary disabled:opacity-50"
+        className="rounded-xl border border-black/10 bg-surface px-3 py-2 text-base text-ink placeholder:text-muted focus:outline-primary disabled:opacity-50"
       />
       {noteError && <p className="text-xs text-status-high">{noteError}</p>}
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <input
           ref={fileInputRef}
           type="file"
@@ -73,7 +73,7 @@ export function NoteComposer({ location, onSubmitted }: Props) {
           type="button"
           disabled={busy}
           onClick={() => fileInputRef.current?.click()}
-          className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-muted hover:bg-black/5 disabled:opacity-50"
+          className="min-h-11 rounded-full bg-surface px-3 text-xs font-medium text-muted hover:bg-black/5 disabled:opacity-50"
         >
           {photoFile ? t.notes.photoAttached : t.notes.attachPhoto}
         </button>
@@ -85,7 +85,7 @@ export function NoteComposer({ location, onSubmitted }: Props) {
               setPhotoFile(null);
               if (fileInputRef.current) fileInputRef.current.value = "";
             }}
-            className="text-xs text-muted underline"
+            className="flex min-h-11 items-center px-1 text-xs text-muted underline"
           >
             {t.notes.removePhoto}
           </button>
@@ -94,7 +94,7 @@ export function NoteComposer({ location, onSubmitted }: Props) {
           type="button"
           disabled={!canSubmit}
           onClick={handleSubmit}
-          className="ml-auto rounded-full bg-primary px-3 py-1 text-xs font-medium text-paper transition-colors duration-200 hover:bg-primary/90 disabled:opacity-50"
+          className="ml-auto min-h-11 rounded-full bg-primary px-4 text-xs font-medium text-paper transition-colors duration-200 hover:bg-primary/90 disabled:opacity-50"
         >
           {busy ? t.report.submitting : t.report.submit}
         </button>

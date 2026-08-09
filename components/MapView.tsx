@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase";
 import { Map } from "@/components/Map";
 import { Sidebar } from "@/components/Sidebar";
 import { BestOptionBanner } from "@/components/BestOptionBanner";
+import { LocationDetailSheet } from "@/components/LocationDetailSheet";
+import { useLocale } from "@/lib/i18n/LocaleContext";
 import { aggregateStatus, worstStatus, STALE_THRESHOLD_MINUTES } from "@/lib/aggregateStatus";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
 import type { DepartmentWithStatus } from "@/components/DepartmentReportList";
@@ -24,6 +26,8 @@ const STATUS_REFRESH_MS = 60_000;
  * opens that marker's popup, and vice versa) without either one owning
  * the data fetching. */
 export function MapView() {
+  const { t } = useLocale();
+  const [mobileTab, setMobileTab] = useState<"map" | "list">("map");
   const [locations, setLocations] = useState<Location[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [reports, setReports] = useState<QueueReport[]>([]);
@@ -196,13 +200,44 @@ export function MapView() {
     return map;
   }, [locations, departmentsWithStatusByLocation, reportsByLocation, now, disputedReportIds]);
 
+  const selectedLocation = locations.find((l) => l.id === selectedLocationId);
+  const selectedStatus = selectedLocationId ? statusByLocation[selectedLocationId] : undefined;
+
   return (
     <div className="flex h-full flex-col">
       <BestOptionBanner locations={locations} statusByLocation={statusByLocation} />
-      <div className="flex flex-1 flex-col md:flex-row">
-        {/* Mobile: map above, sidebar below (order-2) and scrollable within
-            its own bounds. Desktop: sidebar on the left, full height. */}
-        <div className="order-1 min-h-[45vh] flex-1 md:order-2 md:min-h-0">
+
+      {/* Below md, map and list take turns filling the remaining height
+          instead of splitting it 45/45 — on a 375px-tall viewport, half a
+          map and half a five-row list are both too cramped to actually
+          use. md+ keeps the classic side-by-side layout, tab bar hidden. */}
+      <div className="flex min-h-11 shrink-0 border-b border-black/5 bg-paper md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileTab("map")}
+          aria-pressed={mobileTab === "map"}
+          className={`flex-1 border-b-2 py-2.5 text-sm font-medium ${
+            mobileTab === "map" ? "border-primary text-primary" : "border-transparent text-muted"
+          }`}
+        >
+          {t.sidebar.mapTab}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab("list")}
+          aria-pressed={mobileTab === "list"}
+          className={`flex-1 border-b-2 py-2.5 text-sm font-medium ${
+            mobileTab === "list" ? "border-primary text-primary" : "border-transparent text-muted"
+          }`}
+        >
+          {t.sidebar.listTab}
+        </button>
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <div
+          className={`min-h-0 flex-1 md:order-2 md:flex ${mobileTab === "map" ? "flex" : "hidden"}`}
+        >
           <Map
             locations={locations}
             statusByLocation={statusByLocation}
@@ -212,7 +247,11 @@ export function MapView() {
             onSelectLocation={setSelectedLocationId}
           />
         </div>
-        <div className="order-2 h-[45vh] md:order-1 md:h-full md:w-[35%] md:shrink-0">
+        <div
+          className={`min-h-0 flex-1 md:order-1 md:flex md:h-full md:w-[35%] md:shrink-0 ${
+            mobileTab === "list" ? "flex" : "hidden"
+          }`}
+        >
           <Sidebar
             locations={locations}
             statusByLocation={statusByLocation}
@@ -222,6 +261,14 @@ export function MapView() {
           />
         </div>
       </div>
+
+      <LocationDetailSheet
+        location={selectedLocation}
+        status={selectedStatus}
+        departments={selectedLocationId ? (departmentsWithStatusByLocation[selectedLocationId] ?? []) : []}
+        notes={selectedLocationId ? (notesByLocation[selectedLocationId] ?? []) : []}
+        onClose={() => setSelectedLocationId(null)}
+      />
     </div>
   );
 }

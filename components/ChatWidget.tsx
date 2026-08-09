@@ -80,7 +80,7 @@ export function ChatWidget() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed right-5 bottom-5 z-30 flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-medium text-paper shadow-lg transition-colors duration-200 hover:bg-primary/90"
+        className="fixed right-5 bottom-5 z-30 flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-paper shadow-lg transition-colors duration-200 hover:bg-primary/90"
       >
         <span aria-hidden>💬</span>
         {t.chat.launcherLabel}
@@ -89,20 +89,27 @@ export function ChatWidget() {
   }
 
   return (
-    <div className="fixed inset-x-4 bottom-5 z-30 flex h-[70vh] max-h-[560px] flex-col overflow-hidden rounded-2xl bg-paper shadow-2xl sm:right-5 sm:left-auto sm:w-96">
-      <div className="flex items-center justify-between border-b border-black/5 px-4 py-3">
+    // Full-screen sheet below sm — a small floating window is unusable
+    // once the on-screen keyboard shows up on a phone. `h-[100dvh]`
+    // (dynamic viewport height) instead of `100vh`/a fixed height is what
+    // keeps the input row above the keyboard: modern mobile browsers
+    // shrink the *visual* viewport (and therefore dvh) when the keyboard
+    // opens, so a height built from it shrinks along with it rather than
+    // getting covered.
+    <div className="sheet-slide-up fixed inset-0 z-30 flex h-[100dvh] flex-col overflow-hidden bg-paper shadow-2xl sm:inset-auto sm:right-5 sm:bottom-5 sm:h-[70vh] sm:max-h-[560px] sm:w-96 sm:rounded-2xl">
+      <div className="flex shrink-0 items-center justify-between border-b border-black/5 px-4 py-3">
         <p className="text-sm font-semibold text-ink">{t.chat.title}</p>
         <button
           type="button"
           onClick={() => setOpen(false)}
           aria-label={t.chat.close}
-          className="text-muted hover:text-ink"
+          className="flex min-h-11 min-w-11 items-center justify-center text-muted hover:text-ink"
         >
           ✕
         </button>
       </div>
 
-      <div className="border-b border-status-high/20 bg-status-high/10 px-4 py-2 text-xs font-medium text-status-high">
+      <div className="shrink-0 border-b border-status-high/20 bg-status-high/10 px-4 py-2 text-xs font-medium text-status-high">
         {t.chat.emergencyBanner}
       </div>
 
@@ -128,12 +135,12 @@ export function ChatWidget() {
         )}
       </div>
 
-      <div className="border-t border-black/5 px-4 py-2 text-[11px] leading-snug text-muted">
+      <div className="shrink-0 border-t border-black/5 px-4 py-2 text-xs leading-snug text-muted">
         <p>{t.chat.disclaimer}</p>
         <p>{t.chat.privacyNote}</p>
       </div>
 
-      <div className="flex items-center gap-2 border-t border-black/5 p-3">
+      <div className="flex shrink-0 items-center gap-2 border-t border-black/5 p-3">
         <input
           type="text"
           value={input}
@@ -141,13 +148,13 @@ export function ChatWidget() {
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder={t.chat.placeholder}
           disabled={busy}
-          className="flex-1 rounded-full bg-surface px-4 py-2 text-sm text-ink placeholder:text-muted focus:outline-primary disabled:opacity-50"
+          className="min-h-11 flex-1 rounded-full bg-surface px-4 text-base text-ink placeholder:text-muted focus:outline-primary disabled:opacity-50"
         />
         <button
           type="button"
           onClick={handleSend}
           disabled={busy || !input.trim()}
-          className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-paper transition-colors duration-200 hover:bg-primary/90 disabled:opacity-50"
+          className="min-h-11 shrink-0 rounded-full bg-primary px-4 text-sm font-medium text-paper transition-colors duration-200 hover:bg-primary/90 disabled:opacity-50"
         >
           {t.chat.send}
         </button>

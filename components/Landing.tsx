@@ -84,9 +84,24 @@ export function Landing({ onEnter }: Props) {
   return (
     <div className="flex flex-1 flex-col bg-surface">
       <header className="relative z-10 flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <span className="min-w-0 truncate text-sm font-semibold text-primary">
-          {t.appTitle}
-        </span>
+        {/* Cross lives here now — a small, square, unrotated badge in
+            normal document flow next to the wordmark, not an absolutely
+            positioned decoration. Its third attempt: first as a full-bleed
+            background shape, then as a corner element that could still
+            collide with other content — a plain in-flow logo mark can't
+            drift or overflow at any viewport, because it's laid out by
+            flexbox like everything else in the header. */}
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary sm:h-8 sm:w-8">
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 text-paper sm:h-5 sm:w-5">
+              <rect x="10" y="4" width="4" height="16" rx="1" fill="currentColor" />
+              <rect x="4" y="10" width="16" height="4" rx="1" fill="currentColor" />
+            </svg>
+          </span>
+          <span className="min-w-0 truncate text-sm font-semibold text-primary">
+            {t.appTitle}
+          </span>
+        </div>
         <div className="shrink-0">
           <LanguageSwitcher />
         </div>
@@ -110,20 +125,8 @@ export function Landing({ onEnter }: Props) {
           }}
         />
 
-        {/* Small tilted cross accent, corner-anchored — not a full-bleed
-            watermark. Hidden below `sm` since there's no room to spare
-            next to the header at phone widths. */}
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          className="pointer-events-none absolute top-4 right-4 hidden h-10 w-10 rotate-[10deg] text-red-600 sm:right-6 sm:block sm:h-12 sm:w-12"
-        >
-          <rect x="10" y="2" width="4" height="20" rx="1" fill="currentColor" />
-          <rect x="2" y="10" width="20" height="4" rx="1" fill="currentColor" />
-        </svg>
-
-        {/* Quiet context label, bottom-right — same breakpoint guard as the
-            cross above, for the same reason. */}
+        {/* Quiet context label, bottom-right — hidden below `sm` since
+            there's no safe room to spare at phone widths. */}
         <div className="pointer-events-none absolute right-4 bottom-4 hidden items-center gap-1 text-xs text-muted sm:right-6 sm:flex">
           <svg
             aria-hidden="true"
@@ -155,7 +158,7 @@ export function Landing({ onEnter }: Props) {
             </div>
 
             <div>
-              <h1 className="text-[clamp(2rem,8vw,3.5rem)] leading-tight font-bold text-primary">
+              <h1 className="text-4xl font-bold text-primary">
                 {t.appTitle}
               </h1>
               <p className="mt-3 text-base font-medium text-muted">{t.appTagline}</p>
