@@ -117,3 +117,32 @@ export function aggregateStatus(
     reportsLastHour,
   };
 }
+
+const NO_DATA_STATUS: AggregatedStatus = {
+  status: "no-data",
+  lastReportAt: null,
+  minutesAgo: null,
+  peopleCount: null,
+  reportsLastHour: 0,
+};
+
+// Concrete, fresh load levels outrank stale data, which in turn outranks
+// having no data at all — so a hospital with one busy department but three
+// others with no reports still shows as busy, not as "no data".
+const STATUS_SEVERITY: Record<AggregatedStatus["status"], number> = {
+  high: 4,
+  medium: 3,
+  low: 2,
+  stale: 1,
+  "no-data": 0,
+};
+
+/** Rolls up several already-aggregated statuses (e.g. one per department)
+ * into a single "worst case" status for their parent (e.g. the hospital). */
+export function worstStatus(statuses: AggregatedStatus[]): AggregatedStatus {
+  if (statuses.length === 0) return NO_DATA_STATUS;
+
+  return statuses.reduce((worst, s) =>
+    STATUS_SEVERITY[s.status] > STATUS_SEVERITY[worst.status] ? s : worst
+  );
+}

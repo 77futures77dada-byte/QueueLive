@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { t } from "@/lib/i18n";
+import { useLocale } from "@/lib/i18n/LocaleContext";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 interface Props {
   onEnter: () => void;
 }
 
 export function Landing({ onEnter }: Props) {
+  const { t } = useLocale();
   const [todayCount, setTodayCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -34,14 +36,19 @@ export function Landing({ onEnter }: Props) {
 
   return (
     <div className="relative flex flex-1 flex-col items-center justify-between overflow-hidden bg-surface px-6 py-12 text-center">
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSwitcher />
+      </div>
+
       {/* Decorative medical cross — a generic plus, not any organization's
-          mark. Purely background texture: kept low-opacity and behind the
-          content (z-0 vs. the content's z-10) so it never competes with
-          text for attention or contrast. */}
+          mark. Background texture, kept behind the content (z-0 vs. the
+          content's z-10) so it never competes with text for contrast, but
+          large and visible enough to read as part of the page on first
+          glance rather than a small corner decoration. */}
       <svg
         aria-hidden="true"
         viewBox="0 0 100 100"
-        className="pointer-events-none absolute top-1/2 left-1/2 z-0 h-[65vmin] w-[65vmin] -translate-x-1/2 -translate-y-1/2 text-red-600 opacity-[0.06]"
+        className="pointer-events-none absolute top-1/2 left-1/2 z-0 h-[95vmin] w-[95vmin] -translate-x-1/2 -translate-y-1/2 text-red-600 opacity-[0.3]"
       >
         <rect x="38" y="4" width="24" height="92" rx="1.5" fill="currentColor" />
         <rect x="4" y="38" width="92" height="24" rx="1.5" fill="currentColor" />

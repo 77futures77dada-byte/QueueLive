@@ -1,28 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useReportSubmit } from "@/lib/useReportSubmit";
+import { useNoteSubmit } from "@/lib/useReportSubmit";
 import { validateNoteText } from "@/lib/noteModeration";
-import { t } from "@/lib/i18n";
-import type { Location, LoadLevel } from "@/types/database";
-
-const LEVELS: { level: LoadLevel; label: string; className: string }[] = [
-  {
-    level: "low",
-    label: t.status.low,
-    className: "bg-status-low/15 text-status-low hover:bg-status-low/25",
-  },
-  {
-    level: "medium",
-    label: t.status.medium,
-    className: "bg-status-medium/15 text-status-medium hover:bg-status-medium/25",
-  },
-  {
-    level: "high",
-    label: t.status.high,
-    className: "bg-status-high/15 text-status-high hover:bg-status-high/25",
-  },
-];
+import { useLocale } from "@/lib/i18n/LocaleContext";
+import type { Location } from "@/types/database";
 
 const MAX_NOTE_LENGTH = 300;
 
@@ -31,24 +13,25 @@ interface Props {
   onSubmitted?: () => void;
 }
 
-export function ReportButtons({ location, onSubmitted }: Props) {
-  const { state, busy, submit } = useReportSubmit(location, onSubmitted);
+/** Standalone text/photo note about a location — split out from the queue
+ * report itself now that reporting happens per department, since a note is
+ * about the location as a whole, not any one department. */
+export function NoteComposer({ location, onSubmitted }: Props) {
+  const { t } = useLocale();
+  const { state, busy, submit } = useNoteSubmit(location, onSubmitted);
   const [text, setText] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [noteError, setNoteError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Validated before submit() is ever called, so a rejected note doesn't
-  // burn the 15-minute rate-limit window — the person can just fix the
-  // text and try again.
-  function handleLevelClick(level: LoadLevel) {
+  function handleSubmit() {
     const validation = validateNoteText(text);
     if (!validation.ok) {
       setNoteError(validation.reason);
       return;
     }
     setNoteError(null);
-    submit(level, { text, photoFile });
+    submit({ text, photoFile });
   }
 
   if (state.phase === "success") {
@@ -59,10 +42,11 @@ export function ReportButtons({ location, onSubmitted }: Props) {
     );
   }
 
+  const canSubmit = (text.trim().length > 0 || photoFile !== null) && !busy;
+
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium text-ink">{t.report.prompt}</p>
-
+      <p className="text-sm font-medium text-ink">{t.notes.addNoteLabel}</p>
       <textarea
         value={text}
         onChange={(e) => {
@@ -106,21 +90,16 @@ export function ReportButtons({ location, onSubmitted }: Props) {
             {t.notes.removePhoto}
           </button>
         )}
+        <button
+          type="button"
+          disabled={!canSubmit}
+          onClick={handleSubmit}
+          className="ml-auto rounded-full bg-primary px-3 py-1 text-xs font-medium text-paper transition-colors duration-200 hover:bg-primary/90 disabled:opacity-50"
+        >
+          {busy ? t.report.submitting : t.report.submit}
+        </button>
       </div>
 
-      <div className="flex flex-col gap-2">
-        {LEVELS.map(({ level, label, className }) => (
-          <button
-            key={level}
-            type="button"
-            disabled={busy}
-            onClick={() => handleLevelClick(level)}
-            className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-colors duration-200 disabled:opacity-50 ${className}`}
-          >
-            {busy ? t.report.submitting : label}
-          </button>
-        ))}
-      </div>
       {state.phase === "error" && (
         <p className="rounded-xl bg-status-high/15 px-3 py-2 text-sm text-status-high">
           {state.message}

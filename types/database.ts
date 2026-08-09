@@ -43,10 +43,42 @@ export interface Database {
         };
         Relationships: [];
       };
+      departments: {
+        Row: {
+          id: string;
+          location_id: string;
+          name: string;
+          slug: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          location_id: string;
+          name: string;
+          slug: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          location_id?: string;
+          name?: string;
+          slug?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "departments_location_id_fkey";
+            columns: ["location_id"];
+            referencedRelation: "locations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       queue_reports: {
         Row: {
           id: string;
           location_id: string;
+          department_id: string | null;
           load_level: "low" | "medium" | "high";
           people_count: number | null;
           device_id: string;
@@ -55,6 +87,7 @@ export interface Database {
         Insert: {
           id?: string;
           location_id: string;
+          department_id?: string | null;
           load_level: "low" | "medium" | "high";
           people_count?: number | null;
           device_id: string;
@@ -63,6 +96,7 @@ export interface Database {
         Update: {
           id?: string;
           location_id?: string;
+          department_id?: string | null;
           load_level?: "low" | "medium" | "high";
           people_count?: number | null;
           device_id?: string;
@@ -73,6 +107,12 @@ export interface Database {
             foreignKeyName: "queue_reports_location_id_fkey";
             columns: ["location_id"];
             referencedRelation: "locations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "queue_reports_department_id_fkey";
+            columns: ["department_id"];
+            referencedRelation: "departments";
             referencedColumns: ["id"];
           },
         ];
@@ -125,5 +165,7 @@ export type LocationType = Location["type"];
 
 export type QueueReport = Database["public"]["Tables"]["queue_reports"]["Row"];
 export type LoadLevel = QueueReport["load_level"];
+
+export type Department = Database["public"]["Tables"]["departments"]["Row"];
 
 export type LocationNote = Database["public"]["Tables"]["location_notes"]["Row"];

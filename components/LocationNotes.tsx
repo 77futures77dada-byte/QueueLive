@@ -1,4 +1,4 @@
-import { t } from "@/lib/i18n";
+import { useLocale } from "@/lib/i18n/LocaleContext";
 import type { LocationNote } from "@/types/database";
 
 const MAX_TEXT_NOTES = 5;
@@ -13,6 +13,7 @@ interface Props {
 }
 
 export function LocationNotes({ notes }: Props) {
+  const { t } = useLocale();
   if (notes.length === 0) return null;
 
   const photos = notes.filter((n) => n.photo_url).slice(0, MAX_PHOTOS);
@@ -52,7 +53,7 @@ export function LocationNotes({ notes }: Props) {
           {textNotes.map((note) => (
             <li key={note.id} className="rounded-lg bg-surface px-2.5 py-1.5 text-sm text-ink">
               {note.text}
-              <span className="ml-1.5 text-xs text-muted">{minutesAgo(note.created_at)} мин.</span>
+              <span className="ml-1.5 text-xs text-muted">{t.notes.minutesAgo(minutesAgo(note.created_at))}</span>
             </li>
           ))}
         </ul>

@@ -3,60 +3,77 @@
 import L from "leaflet";
 import { useEffect, useRef } from "react";
 import { Marker, Popup } from "react-leaflet";
-import { ReportButtons } from "@/components/ReportButtons";
+import { DepartmentReportList } from "@/components/DepartmentReportList";
+import { NoteComposer } from "@/components/NoteComposer";
 import { LocationNotes } from "@/components/LocationNotes";
-import { t } from "@/lib/i18n";
+import { useLocale } from "@/lib/i18n/LocaleContext";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
+import type { DepartmentWithStatus } from "@/components/DepartmentReportList";
 import type { Location, LocationNote } from "@/types/database";
 
-// Reported statuses get the real status color; no-data/stale share one
-// calm neutral tone (a faded version of the accent blue) — the map's job
-// is just to show *where* things are until someone actually reports.
-const STATUS_COLOR: Record<AggregatedStatus["status"], string> = {
+// Status now lives on a small badge, not the pin itself — the pin's job is
+// just to say "medical location here" (universal red teardrop), the badge's
+// job is to say how busy it currently is.
+const STATUS_COLOR: Record<"low" | "medium" | "high", string> = {
   low: "var(--status-low)",
   medium: "var(--status-medium)",
   high: "var(--status-high)",
-  stale: "var(--primary)",
-  "no-data": "var(--primary)",
 };
 
-// One size for every state — status is color-only, never size, so the map
-// never reads as "growing with alarm".
-const MARKER_SIZE = 20;
+const PIN_COLOR = "#dc2626"; // saturated medical red — the map convention for "hospital"
+const BADGE_GRAY = "#9a9890";
+const PIN_WIDTH = 28;
+const PIN_HEIGHT = 36;
+const BADGE_CX = 21;
+const BADGE_CY = 10;
+const BADGE_R = 5.5;
 
-function buildIcon(status: AggregatedStatus) {
+function buildBadge(status: AggregatedStatus): string {
+  if (status.status === "no-data") return ""; // pin alone still reads as "hospital"
+
+  if (status.status === "stale") {
+    return `<circle cx="${BADGE_CX}" cy="${BADGE_CY}" r="${BADGE_R}" fill="${BADGE_GRAY}" stroke="white" stroke-width="2" />`;
+  }
+
   const color = STATUS_COLOR[status.status];
-  const isNeutral = status.status === "stale" || status.status === "no-data";
   const pulse =
     status.status === "high"
-      ? `<circle class="marker-pulse-ring" cx="10" cy="10" r="6" fill="${color}" />`
+      ? `<circle class="marker-pulse-ring" cx="${BADGE_CX}" cy="${BADGE_CY}" r="${BADGE_R}" fill="${color}" />`
       : "";
 
+  return `${pulse}<circle cx="${BADGE_CX}" cy="${BADGE_CY}" r="${BADGE_R}" fill="${color}" stroke="white" stroke-width="2" />`;
+}
+
+function buildIcon(status: AggregatedStatus) {
+  const badge = buildBadge(status);
+
   const html = `
-    <svg width="${MARKER_SIZE}" height="${MARKER_SIZE}" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 2px rgba(51,50,46,0.35))">
-      ${pulse}
-      <circle cx="10" cy="10" r="7" fill="${color}" fill-opacity="${isNeutral ? 0.45 : 0.9}" stroke="white" stroke-width="2" />
+    <svg width="${PIN_WIDTH}" height="${PIN_HEIGHT}" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 3px rgba(51,50,46,0.4))">
+      <path d="M14 1.5C7.65 1.5 2.5 6.65 2.5 13c0 8.2 11.5 21.5 11.5 21.5S25.5 21.2 25.5 13C25.5 6.65 20.35 1.5 14 1.5z" fill="${PIN_COLOR}" stroke="white" stroke-width="1.5" />
+      ${badge}
     </svg>
   `;
 
   return L.divIcon({
     html,
     className: "",
-    iconSize: [MARKER_SIZE, MARKER_SIZE],
-    iconAnchor: [MARKER_SIZE / 2, MARKER_SIZE / 2],
-    popupAnchor: [0, -MARKER_SIZE / 2],
+    iconSize: [PIN_WIDTH, PIN_HEIGHT],
+    iconAnchor: [PIN_WIDTH / 2, PIN_HEIGHT],
+    popupAnchor: [0, -PIN_HEIGHT + 6],
   });
 }
 
 interface Props {
   location: Location;
   status: AggregatedStatus;
+  departments: DepartmentWithStatus[];
   notes: LocationNote[];
   isSelected?: boolean;
   onOpen?: () => void;
 }
 
-export function LocationMarker({ location, status, notes, isSelected, onOpen }: Props) {
+export function LocationMarker({ location, status, departments, notes, isSelected, onOpen }: Props) {
+  const { t } = useLocale();
   const markerRef = useRef<L.Marker>(null);
 
   useEffect(() => {
@@ -70,7 +87,7 @@ export function LocationMarker({ location, status, notes, isSelected, onOpen }: 
       icon={buildIcon(status)}
       eventHandlers={{ popupopen: () => onOpen?.() }}
     >
-      <Popup minWidth={260}>
+      <Popup minWidth={260} maxHeight={420}>
         <div className="flex flex-col gap-3 p-4">
           <div>
             <p className="text-base leading-snug font-semibold text-ink">
@@ -115,7 +132,14 @@ export function LocationMarker({ location, status, notes, isSelected, onOpen }: 
 
           <LocationNotes notes={notes} />
 
-          <ReportButtons location={location} />
+          {departments.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-ink">{t.report.prompt}</p>
+              <DepartmentReportList location={location} departments={departments} />
+            </div>
+          )}
+
+          <NoteComposer location={location} />
         </div>
       </Popup>
     </Marker>

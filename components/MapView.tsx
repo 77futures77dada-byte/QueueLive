@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Map } from "@/components/Map";
 import { Sidebar } from "@/components/Sidebar";
-import { aggregateStatus, STALE_THRESHOLD_MINUTES } from "@/lib/aggregateStatus";
+import { aggregateStatus, worstStatus, STALE_THRESHOLD_MINUTES } from "@/lib/aggregateStatus";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
-import type { Location, LocationNote, QueueReport } from "@/types/database";
+import type { DepartmentWithStatus } from "@/components/DepartmentReportList";
+import type { Department, Location, LocationNote, QueueReport } from "@/types/database";
 
 const STATUS_REFRESH_MS = 60_000;
 
@@ -17,6 +18,7 @@ const STATUS_REFRESH_MS = 60_000;
  * the data fetching. */
 export function MapView() {
   const [locations, setLocations] = useState<Location[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [reports, setReports] = useState<QueueReport[]>([]);
   const [notes, setNotes] = useState<LocationNote[]>([]);
   const [now, setNow] = useState(() => Date.now());
@@ -30,8 +32,9 @@ export function MapView() {
         Date.now() - STALE_THRESHOLD_MINUTES * 60_000
       ).toISOString();
 
-      const [locationsRes, reportsRes, notesRes] = await Promise.all([
+      const [locationsRes, departmentsRes, reportsRes, notesRes] = await Promise.all([
         supabase.from("locations").select("*"),
+        supabase.from("departments").select("*"),
         supabase
           .from("queue_reports")
           .select("*")
@@ -44,6 +47,7 @@ export function MapView() {
 
       if (cancelled) return;
       if (locationsRes.data) setLocations(locationsRes.data);
+      if (departmentsRes.data) setDepartments(departmentsRes.data);
       if (reportsRes.data) setReports(reportsRes.data);
       if (notesRes.data) setNotes(notesRes.data);
     }
@@ -94,6 +98,25 @@ export function MapView() {
     };
   }, [locations]);
 
+  const departmentsByLocation = useMemo(() => {
+    const grouped: Record<string, Department[]> = {};
+    for (const department of departments) {
+      (grouped[department.location_id] ??= []).push(department);
+    }
+    return grouped;
+  }, [departments]);
+
+  const reportsByDepartment = useMemo(() => {
+    const grouped: Record<string, QueueReport[]> = {};
+    for (const report of reports) {
+      if (!report.department_id) continue;
+      (grouped[report.department_id] ??= []).push(report);
+    }
+    return grouped;
+  }, [reports]);
+
+  // Reports without a department_id still count towards the location's own
+  // fallback aggregation (used when a location has no departments defined).
   const reportsByLocation = useMemo(() => {
     const grouped: Record<string, QueueReport[]> = {};
     for (const report of reports) {
@@ -110,13 +133,31 @@ export function MapView() {
     return grouped;
   }, [notes]);
 
+  const departmentsWithStatusByLocation = useMemo(() => {
+    const map: Record<string, DepartmentWithStatus[]> = {};
+    for (const location of locations) {
+      map[location.id] = (departmentsByLocation[location.id] ?? []).map((department) => ({
+        ...department,
+        status: aggregateStatus(reportsByDepartment[department.id] ?? [], now),
+      }));
+    }
+    return map;
+  }, [locations, departmentsByLocation, reportsByDepartment, now]);
+
+  // A hospital's overall status is the worst among its departments — one
+  // busy department is enough to flag the whole place. Locations without
+  // any departments defined fall back to the old whole-location aggregation.
   const statusByLocation = useMemo(() => {
     const map: Record<string, AggregatedStatus> = {};
     for (const location of locations) {
-      map[location.id] = aggregateStatus(reportsByLocation[location.id] ?? [], now);
+      const departmentStatuses = departmentsWithStatusByLocation[location.id] ?? [];
+      map[location.id] =
+        departmentStatuses.length > 0
+          ? worstStatus(departmentStatuses.map((d) => d.status))
+          : aggregateStatus(reportsByLocation[location.id] ?? [], now);
     }
     return map;
-  }, [locations, reportsByLocation, now]);
+  }, [locations, departmentsWithStatusByLocation, reportsByLocation, now]);
 
   return (
     <div className="flex h-full flex-col md:flex-row">
@@ -126,6 +167,7 @@ export function MapView() {
         <Map
           locations={locations}
           statusByLocation={statusByLocation}
+          departmentsByLocation={departmentsWithStatusByLocation}
           notesByLocation={notesByLocation}
           selectedLocationId={selectedLocationId}
           onSelectLocation={setSelectedLocationId}
@@ -135,6 +177,7 @@ export function MapView() {
         <Sidebar
           locations={locations}
           statusByLocation={statusByLocation}
+          departmentsByLocation={departmentsWithStatusByLocation}
           selectedLocationId={selectedLocationId}
           onSelectLocation={setSelectedLocationId}
         />

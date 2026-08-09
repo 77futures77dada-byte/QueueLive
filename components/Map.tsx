@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import { LocationMarker } from "@/components/LocationMarker";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
+import type { DepartmentWithStatus } from "@/components/DepartmentReportList";
 import type { Location, LocationNote } from "@/types/database";
 
 const TALLINN_CENTER: [number, number] = [59.437, 24.7536];
@@ -33,14 +34,27 @@ function AutoInvalidateSize() {
   return null;
 }
 
-/** Flies to + zooms in on a location selected from the sidebar. Leaflet
- * only exposes this imperatively via the map instance, so it has to live
- * inside a child of MapContainer rather than as a prop on it. */
+/** Flies to + zooms in on a location selected from the sidebar or from
+ * clicking its own marker. Leaflet only exposes this imperatively via the
+ * map instance, so it has to live inside a child of MapContainer rather
+ * than as a prop on it.
+ *
+ * Centering dead-center would put the marker in the middle of the
+ * container, leaving only ~half the container's height for a popup that
+ * opens upward from it — not enough once the popup grew to include a
+ * per-department report list, and it fights with Leaflet's own popup
+ * auto-pan (both try to reposition the map at once). Biasing the target
+ * downward instead leaves comfortable headroom above the marker for the
+ * popup. */
 function FlyToSelection({ location }: { location: Location | undefined }) {
   const map = useMap();
   useEffect(() => {
     if (!location) return;
-    map.flyTo([location.lat, location.lng], Math.max(map.getZoom(), SELECTED_ZOOM));
+    const targetZoom = Math.max(map.getZoom(), SELECTED_ZOOM);
+    const targetPoint = map.project([location.lat, location.lng], targetZoom);
+    const verticalBias = map.getSize().y * 0.18;
+    const centerLatLng = map.unproject(targetPoint.subtract([0, verticalBias]), targetZoom);
+    map.flyTo(centerLatLng, targetZoom);
   }, [location, map]);
   return null;
 }
@@ -48,6 +62,7 @@ function FlyToSelection({ location }: { location: Location | undefined }) {
 interface Props {
   locations: Location[];
   statusByLocation: Record<string, AggregatedStatus>;
+  departmentsByLocation: Record<string, DepartmentWithStatus[]>;
   notesByLocation: Record<string, LocationNote[]>;
   selectedLocationId: string | null;
   onSelectLocation: (id: string) => void;
@@ -56,6 +71,7 @@ interface Props {
 export function Map({
   locations,
   statusByLocation,
+  departmentsByLocation,
   notesByLocation,
   selectedLocationId,
   onSelectLocation,
@@ -80,6 +96,7 @@ export function Map({
           key={location.id}
           location={location}
           status={statusByLocation[location.id]}
+          departments={departmentsByLocation[location.id] ?? []}
           notes={notesByLocation[location.id] ?? []}
           isSelected={location.id === selectedLocationId}
           onOpen={() => onSelectLocation(location.id)}

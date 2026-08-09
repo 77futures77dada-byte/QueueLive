@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { getDeviceId } from "@/lib/deviceId";
 import { checkNearLocation } from "@/lib/geo";
 import { minutesUntilAllowed, recordReportSubmitted } from "@/lib/rateLimit";
-import { t } from "@/lib/i18n";
+import { useLocale } from "@/lib/i18n/LocaleContext";
 import type { Location, LoadLevel } from "@/types/database";
 
 export type ReportSubmitState =
@@ -22,53 +22,19 @@ export interface ReportNote {
 
 const NOTES_BUCKET = "location-photos";
 
-/** Best-effort: uploads the photo (if any) and inserts the note row. Failures
- * here don't block the queue_reports submission that already succeeded —
- * the load-level report is the part that matters most. */
-async function submitNote(location: Location, note: ReportNote) {
-  let photoUrl: string | null = null;
+/** Shared geo-check + rate-limit flow for anything that reports on a
+ * location: a department's queue level, or a standalone note. Both use
+ * the same location-scoped rate limit and geofence — see
+ * useReportSubmit/useNoteSubmit below for the two actions built on it. */
+function useLocationGate(location: Location) {
+  const { t } = useLocale();
 
-  if (note.photoFile) {
-    const ext = note.photoFile.name.split(".").pop() ?? "jpg";
-    const path = `${location.id}/${crypto.randomUUID()}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from(NOTES_BUCKET)
-      .upload(path, note.photoFile);
-
-    if (uploadError) {
-      console.error("Photo upload failed:", uploadError.message);
-    } else {
-      photoUrl = supabase.storage.from(NOTES_BUCKET).getPublicUrl(path).data.publicUrl;
-    }
-  }
-
-  const text = note.text?.trim();
-  if (!text && !photoUrl) return;
-
-  const { error } = await supabase.from("location_notes").insert({
-    location_id: location.id,
-    text: text || null,
-    photo_url: photoUrl,
-    device_id: getDeviceId(),
-  });
-
-  if (error) console.error("Note insert failed:", error.message);
-}
-
-/** Shared geo-check + rate-limit + insert flow for reporting a location's
- * queue load. Used by both the map popup and the sidebar row — the two
- * only differ in how they render `state`. */
-export function useReportSubmit(location: Location, onSubmitted?: () => void) {
-  const [state, setState] = useState<ReportSubmitState>({ phase: "idle" });
-
-  async function submit(level: LoadLevel, note?: ReportNote) {
+  async function checkGate(): Promise<{ ok: true } | { ok: false; message: string }> {
     const blockedForMinutes = minutesUntilAllowed(location.id);
     if (blockedForMinutes > 0) {
-      setState({ phase: "error", message: t.rateLimit.tooSoon });
-      return;
+      return { ok: false, message: t.rateLimit.tooSoon };
     }
 
-    setState({ phase: "checking-geo" });
     const geo = await checkNearLocation({ lat: location.lat, lng: location.lng });
     if (!geo.ok) {
       const message =
@@ -77,13 +43,34 @@ export function useReportSubmit(location: Location, onSubmitted?: () => void) {
           : geo.reason === "denied"
             ? t.geoCheck.denied
             : t.geoCheck.unavailable;
-      setState({ phase: "error", message });
+      return { ok: false, message };
+    }
+
+    return { ok: true };
+  }
+
+  return checkGate;
+}
+
+/** Geo-check + rate-limit + insert flow for reporting a department's queue
+ * load. Used by DepartmentReportList in both the map popup and the sidebar
+ * row — the two only differ in how they render `state`. */
+export function useReportSubmit(location: Location, onSubmitted?: () => void) {
+  const checkGate = useLocationGate(location);
+  const [state, setState] = useState<ReportSubmitState>({ phase: "idle" });
+
+  async function submit(level: LoadLevel, departmentId: string | null) {
+    setState({ phase: "checking-geo" });
+    const gate = await checkGate();
+    if (!gate.ok) {
+      setState({ phase: "error", message: gate.message });
       return;
     }
 
     setState({ phase: "submitting" });
     const { error } = await supabase.from("queue_reports").insert({
       location_id: location.id,
+      department_id: departmentId,
       load_level: level,
       device_id: getDeviceId(),
     });
@@ -94,11 +81,61 @@ export function useReportSubmit(location: Location, onSubmitted?: () => void) {
     }
 
     recordReportSubmitted(location.id);
+    setState({ phase: "success" });
+    onSubmitted?.();
+  }
 
-    if (note?.text || note?.photoFile) {
-      await submitNote(location, note);
+  const busy = state.phase === "checking-geo" || state.phase === "submitting";
+
+  return { state, busy, submit };
+}
+
+/** Geo-check + rate-limit + insert flow for leaving a standalone note/photo
+ * on a location — split out from useReportSubmit now that reporting is
+ * per-department, since a note is about the location as a whole. */
+export function useNoteSubmit(location: Location, onSubmitted?: () => void) {
+  const checkGate = useLocationGate(location);
+  const [state, setState] = useState<ReportSubmitState>({ phase: "idle" });
+
+  async function submit(note: ReportNote) {
+    setState({ phase: "checking-geo" });
+    const gate = await checkGate();
+    if (!gate.ok) {
+      setState({ phase: "error", message: gate.message });
+      return;
     }
 
+    setState({ phase: "submitting" });
+
+    let photoUrl: string | null = null;
+    if (note.photoFile) {
+      const ext = note.photoFile.name.split(".").pop() ?? "jpg";
+      const path = `${location.id}/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from(NOTES_BUCKET)
+        .upload(path, note.photoFile);
+
+      if (uploadError) {
+        console.error("Photo upload failed:", uploadError.message);
+      } else {
+        photoUrl = supabase.storage.from(NOTES_BUCKET).getPublicUrl(path).data.publicUrl;
+      }
+    }
+
+    const text = note.text?.trim();
+    const { error } = await supabase.from("location_notes").insert({
+      location_id: location.id,
+      text: text || null,
+      photo_url: photoUrl,
+      device_id: getDeviceId(),
+    });
+
+    if (error) {
+      setState({ phase: "error", message: error.message });
+      return;
+    }
+
+    recordReportSubmitted(location.id);
     setState({ phase: "success" });
     onSubmitted?.();
   }

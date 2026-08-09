@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ReportButtonsCompact } from "@/components/ReportButtonsCompact";
+import { DepartmentReportList } from "@/components/DepartmentReportList";
 import { distanceMeters } from "@/lib/geo";
-import { t } from "@/lib/i18n";
+import { useLocale } from "@/lib/i18n/LocaleContext";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
+import type { DepartmentWithStatus } from "@/components/DepartmentReportList";
 import type { Location } from "@/types/database";
 
 // Ascending "how good is this option" — free first, unknowns last. Known-bad
@@ -30,6 +31,7 @@ type SortMode = "status" | "distance";
 interface Props {
   locations: Location[];
   statusByLocation: Record<string, AggregatedStatus>;
+  departmentsByLocation: Record<string, DepartmentWithStatus[]>;
   selectedLocationId: string | null;
   onSelectLocation: (id: string) => void;
 }
@@ -37,13 +39,16 @@ interface Props {
 export function Sidebar({
   locations,
   statusByLocation,
+  departmentsByLocation,
   selectedLocationId,
   onSelectLocation,
 }: Props) {
+  const { t } = useLocale();
   const [sortMode, setSortMode] = useState<SortMode>("status");
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [geoError, setGeoError] = useState(false);
   const [query, setQuery] = useState("");
+  const [expandedLocationId, setExpandedLocationId] = useState<string | null>(null);
 
   function handleSortByDistance() {
     setSortMode("distance");
@@ -126,33 +131,58 @@ export function Sidebar({
         {sorted.map((location) => {
           const status = statusByLocation[location.id];
           const isSelected = location.id === selectedLocationId;
+          const isExpanded = location.id === expandedLocationId;
+          const departments = departmentsByLocation[location.id] ?? [];
           return (
             <li key={location.id} className={isSelected ? "bg-primary-tint" : ""}>
-              <button
-                type="button"
-                onClick={() => onSelectLocation(location.id)}
-                className="block w-full px-4 py-3 text-left"
-              >
-                <p className="text-sm font-semibold text-ink">{location.name}</p>
-                <p className="text-xs text-muted">{t.locationType[location.type]}</p>
-                <p className="mt-1 text-sm">
-                  <span className={`font-medium ${STATUS_TEXT_CLASS[status.status]}`}>
-                    {t.status[status.status]}
-                  </span>
-                  <span className="text-muted">
-                    {" · "}
-                    {status.minutesAgo === null
-                      ? t.report.neverReported
-                      : t.report.updatedAgo(status.minutesAgo)}
-                  </span>
-                </p>
-                <p className="text-xs text-muted">
-                  {t.report.reportsCountLastHour(status.reportsLastHour)}
-                </p>
-              </button>
-              <div className="px-4 pb-3">
-                <ReportButtonsCompact location={location} />
+              <div className="flex items-start">
+                <button
+                  type="button"
+                  onClick={() => onSelectLocation(location.id)}
+                  className="block w-full px-4 py-3 text-left"
+                >
+                  <p className="text-sm font-semibold text-ink">{location.name}</p>
+                  <p className="text-xs text-muted">{t.locationType[location.type]}</p>
+                  <p className="mt-1 text-sm">
+                    <span className={`font-medium ${STATUS_TEXT_CLASS[status.status]}`}>
+                      {t.status[status.status]}
+                    </span>
+                    <span className="text-muted">
+                      {" · "}
+                      {status.minutesAgo === null
+                        ? t.report.neverReported
+                        : t.report.updatedAgo(status.minutesAgo)}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted">
+                    {t.report.reportsCountLastHour(status.reportsLastHour)}
+                  </p>
+                </button>
+                {departments.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpandedLocationId(isExpanded ? null : location.id);
+                    }}
+                    aria-expanded={isExpanded}
+                    aria-label={t.sidebar.showDepartments}
+                    className="shrink-0 px-3 py-3 text-muted hover:text-primary"
+                  >
+                    <span
+                      aria-hidden
+                      className={`inline-block transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                    >
+                      ▾
+                    </span>
+                  </button>
+                )}
               </div>
+              {isExpanded && departments.length > 0 && (
+                <div className="px-4 pb-3">
+                  <DepartmentReportList location={location} departments={departments} />
+                </div>
+              )}
             </li>
           );
         })}

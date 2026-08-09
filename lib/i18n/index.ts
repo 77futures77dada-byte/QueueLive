@@ -1,5 +1,13 @@
 import { ru } from "./ru";
+import { et } from "./et";
+import { en } from "./en";
 
-// Only Russian is wired up for MVP. Swapping this for a locale-aware
-// lookup (e.g. keyed by a `lang` cookie) is the extension point for i18n.
+export const dictionaries = { et, ru, en };
+export type Locale = keyof typeof dictionaries;
+export type Dictionary = typeof ru;
+
+export const LOCALES: Locale[] = ["et", "ru", "en"];
+
+// Backwards-compatible default export for any leftover static imports —
+// prefer `useLocale()` from "@/lib/i18n/LocaleContext" in components.
 export const t = ru;

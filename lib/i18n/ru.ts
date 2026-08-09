@@ -72,6 +72,7 @@ export const ru = {
     sortByDistance: "По расстоянию",
     distanceUnavailable: "Не удалось определить геолокацию для сортировки по расстоянию.",
     noResults: "Ничего не найдено",
+    showDepartments: "Показать направления",
   },
 
   notes: {
@@ -81,11 +82,21 @@ export const ru = {
     removePhoto: "Убрать",
     recent: "Последние заметки",
     empty: "Заметок пока нет",
+    minutesAgo: (minutes: number) => `${minutes} мин. назад`,
+    addNoteLabel: "Оставить заметку",
   },
 
   location: {
     getDirections: "Проложить маршрут",
     call: "Позвонить",
+  },
+
+  // Keyed by departments.slug — department display names live here, not in
+  // the DB, so they switch with the rest of the interface.
+  departments: {
+    trauma: "Травма / переломы",
+    "internal-medicine": "Терапевт / общее недомогание",
+    surgery: "Хирург",
   },
 
   landing: {
@@ -97,6 +108,21 @@ export const ru = {
     ],
     cta: "Посмотреть очередь сейчас",
     todayCount: (count: number) => `Сегодня отметилось ${count} ${pluralPeople(count)}`,
+  },
+
+  chat: {
+    launcherLabel: "Спросить совет",
+    title: "Помощник по здоровью",
+    disclaimer: "Это не медицинская консультация и не заменяет врача.",
+    privacyNote: "Не указывайте личные данные (ФИО, точный адрес и т.п.) в переписке с ботом.",
+    placeholder: "Напишите свой вопрос…",
+    send: "Отправить",
+    emergencyBanner: "Если это похоже на угрозу жизни — сразу звоните 112.",
+    rateLimited: "Бот сейчас перегружен, попробуйте через минуту.",
+    genericError: "Что-то пошло не так. Попробуйте ещё раз.",
+    intro:
+      "Привет! Могу помочь найти ближайшую больницу или разобраться, что может значить ваше состояние. Если это угроза жизни — сразу звоните 112.",
+    close: "Закрыть",
   },
 } as const;
 
