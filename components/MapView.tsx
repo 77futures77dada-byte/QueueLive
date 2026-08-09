@@ -4,10 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Map } from "@/components/Map";
 import { Sidebar } from "@/components/Sidebar";
+import { BestOptionBanner } from "@/components/BestOptionBanner";
 import { aggregateStatus, worstStatus, STALE_THRESHOLD_MINUTES } from "@/lib/aggregateStatus";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
 import type { DepartmentWithStatus } from "@/components/DepartmentReportList";
-import type { Department, Location, LocationNote, QueueReport } from "@/types/database";
+import type {
+  Department,
+  Location,
+  LocationNote,
+  QueueReport,
+  ReportConfirmation,
+} from "@/types/database";
 
 const STATUS_REFRESH_MS = 60_000;
 
@@ -20,6 +27,7 @@ export function MapView() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [reports, setReports] = useState<QueueReport[]>([]);
+  const [confirmations, setConfirmations] = useState<ReportConfirmation[]>([]);
   const [notes, setNotes] = useState<LocationNote[]>([]);
   const [now, setNow] = useState(() => Date.now());
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
@@ -32,23 +40,28 @@ export function MapView() {
         Date.now() - STALE_THRESHOLD_MINUTES * 60_000
       ).toISOString();
 
-      const [locationsRes, departmentsRes, reportsRes, notesRes] = await Promise.all([
-        supabase.from("locations").select("*"),
-        supabase.from("departments").select("*"),
-        supabase
-          .from("queue_reports")
-          .select("*")
-          .gte("created_at", cutoffIso),
-        supabase
-          .from("location_notes")
-          .select("*")
-          .order("created_at", { ascending: false }),
-      ]);
+      const [locationsRes, departmentsRes, reportsRes, confirmationsRes, notesRes] =
+        await Promise.all([
+          supabase.from("locations").select("*"),
+          supabase.from("departments").select("*"),
+          supabase
+            .from("queue_reports")
+            .select("*")
+            .gte("created_at", cutoffIso),
+          // Small table, no cutoff — a report can only still be within the
+          // fetch window above anyway, so its votes are too.
+          supabase.from("report_confirmations").select("*"),
+          supabase
+            .from("location_notes")
+            .select("*")
+            .order("created_at", { ascending: false }),
+        ]);
 
       if (cancelled) return;
       if (locationsRes.data) setLocations(locationsRes.data);
       if (departmentsRes.data) setDepartments(departmentsRes.data);
       if (reportsRes.data) setReports(reportsRes.data);
+      if (confirmationsRes.data) setConfirmations(confirmationsRes.data);
       if (notesRes.data) setNotes(notesRes.data);
     }
 
@@ -91,6 +104,13 @@ export function MapView() {
           setNotes((prev) => [note, ...prev]);
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "report_confirmations" },
+        (payload) => {
+          setConfirmations((prev) => [...prev, payload.new as ReportConfirmation]);
+        }
+      )
       .subscribe();
 
     return () => {
@@ -125,6 +145,23 @@ export function MapView() {
     return grouped;
   }, [reports]);
 
+  // Reports whose 👎 votes outnumber their 👍 votes — feeds a one-step
+  // confidence downgrade in aggregateStatus even for an otherwise-fresh
+  // report (see lib/aggregateStatus.ts).
+  const disputedReportIds = useMemo(() => {
+    const tally: Record<string, { up: number; down: number }> = {};
+    for (const c of confirmations) {
+      const t = (tally[c.report_id] ??= { up: 0, down: 0 });
+      if (c.vote) t.up += 1;
+      else t.down += 1;
+    }
+    const disputed = new Set<string>();
+    for (const [reportId, { up, down }] of Object.entries(tally)) {
+      if (down > up) disputed.add(reportId);
+    }
+    return disputed;
+  }, [confirmations]);
+
   const notesByLocation = useMemo(() => {
     const grouped: Record<string, LocationNote[]> = {};
     for (const note of notes) {
@@ -138,11 +175,11 @@ export function MapView() {
     for (const location of locations) {
       map[location.id] = (departmentsByLocation[location.id] ?? []).map((department) => ({
         ...department,
-        status: aggregateStatus(reportsByDepartment[department.id] ?? [], now),
+        status: aggregateStatus(reportsByDepartment[department.id] ?? [], now, disputedReportIds),
       }));
     }
     return map;
-  }, [locations, departmentsByLocation, reportsByDepartment, now]);
+  }, [locations, departmentsByLocation, reportsByDepartment, now, disputedReportIds]);
 
   // A hospital's overall status is the worst among its departments — one
   // busy department is enough to flag the whole place. Locations without
@@ -154,33 +191,36 @@ export function MapView() {
       map[location.id] =
         departmentStatuses.length > 0
           ? worstStatus(departmentStatuses.map((d) => d.status))
-          : aggregateStatus(reportsByLocation[location.id] ?? [], now);
+          : aggregateStatus(reportsByLocation[location.id] ?? [], now, disputedReportIds);
     }
     return map;
-  }, [locations, departmentsWithStatusByLocation, reportsByLocation, now]);
+  }, [locations, departmentsWithStatusByLocation, reportsByLocation, now, disputedReportIds]);
 
   return (
-    <div className="flex h-full flex-col md:flex-row">
-      {/* Mobile: map above, sidebar below (order-2) and scrollable within
-          its own bounds. Desktop: sidebar on the left, full height. */}
-      <div className="order-1 min-h-[45vh] flex-1 md:order-2 md:min-h-0">
-        <Map
-          locations={locations}
-          statusByLocation={statusByLocation}
-          departmentsByLocation={departmentsWithStatusByLocation}
-          notesByLocation={notesByLocation}
-          selectedLocationId={selectedLocationId}
-          onSelectLocation={setSelectedLocationId}
-        />
-      </div>
-      <div className="order-2 h-[45vh] md:order-1 md:h-full md:w-[35%] md:shrink-0">
-        <Sidebar
-          locations={locations}
-          statusByLocation={statusByLocation}
-          departmentsByLocation={departmentsWithStatusByLocation}
-          selectedLocationId={selectedLocationId}
-          onSelectLocation={setSelectedLocationId}
-        />
+    <div className="flex h-full flex-col">
+      <BestOptionBanner locations={locations} statusByLocation={statusByLocation} />
+      <div className="flex flex-1 flex-col md:flex-row">
+        {/* Mobile: map above, sidebar below (order-2) and scrollable within
+            its own bounds. Desktop: sidebar on the left, full height. */}
+        <div className="order-1 min-h-[45vh] flex-1 md:order-2 md:min-h-0">
+          <Map
+            locations={locations}
+            statusByLocation={statusByLocation}
+            departmentsByLocation={departmentsWithStatusByLocation}
+            notesByLocation={notesByLocation}
+            selectedLocationId={selectedLocationId}
+            onSelectLocation={setSelectedLocationId}
+          />
+        </div>
+        <div className="order-2 h-[45vh] md:order-1 md:h-full md:w-[35%] md:shrink-0">
+          <Sidebar
+            locations={locations}
+            statusByLocation={statusByLocation}
+            departmentsByLocation={departmentsWithStatusByLocation}
+            selectedLocationId={selectedLocationId}
+            onSelectLocation={setSelectedLocationId}
+          />
+        </div>
       </div>
     </div>
   );

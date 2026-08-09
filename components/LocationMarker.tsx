@@ -118,8 +118,20 @@ export function LocationMarker({ location, status, departments, notes, isSelecte
             )}
           </div>
 
-          <p className="rounded-xl bg-primary-tint px-3 py-2 text-sm text-ink">
+          <p
+            className={`rounded-xl bg-primary-tint px-3 py-2 text-sm text-ink ${
+              status.confidence === "low" ? "opacity-60" : ""
+            }`}
+          >
             <span className="font-semibold">{t.status[status.status]}</span>
+            {status.confidence === "medium" && (
+              <span className="ml-1.5 text-xs text-muted">🕒 {t.confidence.mediumNote}</span>
+            )}
+            {status.confidence === "low" && (
+              <span className="block text-xs font-medium text-status-medium">
+                {t.confidence.lowNote}
+              </span>
+            )}
             <span className="block text-xs text-muted">
               {status.minutesAgo === null
                 ? t.report.neverReported

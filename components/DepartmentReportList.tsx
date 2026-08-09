@@ -1,6 +1,7 @@
 "use client";
 
 import { useReportSubmit } from "@/lib/useReportSubmit";
+import { ReportConfirmationButtons } from "@/components/ReportConfirmationButtons";
 import { useLocale } from "@/lib/i18n/LocaleContext";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
 import type { Department, Location, LoadLevel } from "@/types/database";
@@ -55,6 +56,12 @@ function DepartmentRow({ location, department }: RowProps) {
           {t.departments[department.slug as keyof typeof t.departments] ?? department.name}
         </p>
       </div>
+
+      {department.status.lastReportId && (
+        <div className="pl-4.5">
+          <ReportConfirmationButtons reportId={department.status.lastReportId} />
+        </div>
+      )}
 
       {state.phase === "success" ? (
         <p className="text-xs font-medium text-primary">{t.report.success}</p>

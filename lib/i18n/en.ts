@@ -1,7 +1,3 @@
-function pluralReports(count: number): string {
-  return count === 1 ? "check-in" : "check-ins";
-}
-
 function pluralPeople(count: number): string {
   return count === 1 ? "person" : "people";
 }
@@ -21,8 +17,15 @@ export const en = {
     low: "Short wait",
     medium: "There's a queue",
     high: "Long wait",
-    stale: "Data outdated",
+    stale: "No fresh data",
     "no-data": "No reports yet",
+  },
+
+  // Freshness of the last report, independent of the load level itself —
+  // see lib/aggregateStatus.ts's Confidence type.
+  confidence: {
+    mediumNote: "Might be slightly outdated",
+    lowNote: "Could have changed",
   },
 
   // Short glanceable labels for the map badge — the full words above are
@@ -42,8 +45,13 @@ export const en = {
     success: "Thanks! You just helped the next people in line.",
     updatedAgo: (minutes: number) => `Updated ${minutes} min ago`,
     neverReported: "Be the first to check in",
+    // Framed as attributed, self-reported data ("reported"), not as fact —
+    // this count is what backs the displayed status, so it stays visible
+    // next to it rather than being a click-to-reveal detail.
     reportsCountLastHour: (count: number) =>
-      count < 3 ? "not much data" : `${count} ${pluralReports(count)} in the last hour`,
+      count < 3
+        ? "not much data"
+        : `${count} ${pluralPeople(count)} reported in the last hour`,
   },
 
   geoCheck: {
@@ -81,6 +89,18 @@ export const en = {
   location: {
     getDirections: "Get directions",
     call: "Call",
+  },
+
+  confirmation: {
+    stillAccurate: "Still accurate",
+    noLongerAccurate: "No longer accurate",
+    thanks: "Thanks for the update",
+  },
+
+  bestOption: {
+    heading: (name: string) => `Best option right now: ${name}`,
+    distanceAway: (meters: number) =>
+      meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`,
   },
 
   // Keyed by departments.slug — department display names live here, not in

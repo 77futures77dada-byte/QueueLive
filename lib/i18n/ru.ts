@@ -1,11 +1,3 @@
-function pluralReports(count: number): string {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  if (mod10 === 1 && mod100 !== 11) return "отметка";
-  if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return "отметки";
-  return "отметок";
-}
-
 function pluralPeople(count: number): string {
   const mod10 = count % 10;
   const mod100 = count % 100;
@@ -29,8 +21,15 @@ export const ru = {
     low: "Свободно",
     medium: "Есть очередь",
     high: "Долгое ожидание",
-    stale: "Данные устарели",
+    stale: "Нет свежих данных",
     "no-data": "Пока никто не отмечался",
+  },
+
+  // Freshness of the last report, independent of the load level itself —
+  // see lib/aggregateStatus.ts's Confidence type.
+  confidence: {
+    mediumNote: "Могло немного устареть",
+    lowNote: "Могло измениться",
   },
 
   // Short glanceable labels for the map badge — the full words above are
@@ -50,8 +49,13 @@ export const ru = {
     success: "Спасибо! Вы помогли следующим посетителям.",
     updatedAgo: (minutes: number) => `Обновлено ${minutes} мин. назад`,
     neverReported: "Будь первым, кто оставит отметку",
+    // Framed as attributed, self-reported data ("сообщили"), not as fact —
+    // this count is what backs the displayed status, so it stays visible
+    // next to it rather than being a click-to-reveal detail.
     reportsCountLastHour: (count: number) =>
-      count < 3 ? "мало данных" : `${count} ${pluralReports(count)} за час`,
+      count < 3
+        ? "мало данных"
+        : `${count} ${pluralPeople(count)} сообщили за последний час`,
   },
 
   geoCheck: {
@@ -89,6 +93,18 @@ export const ru = {
   location: {
     getDirections: "Проложить маршрут",
     call: "Позвонить",
+  },
+
+  confirmation: {
+    stillAccurate: "Всё ещё так",
+    noLongerAccurate: "Уже не так",
+    thanks: "Спасибо за уточнение",
+  },
+
+  bestOption: {
+    heading: (name: string) => `Лучший вариант сейчас: ${name}`,
+    distanceAway: (meters: number) =>
+      meters < 1000 ? `${Math.round(meters)} м` : `${(meters / 1000).toFixed(1)} км`,
   },
 
   // Keyed by departments.slug — department display names live here, not in

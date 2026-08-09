@@ -117,6 +117,37 @@ export interface Database {
           },
         ];
       };
+      report_confirmations: {
+        Row: {
+          id: string;
+          report_id: string;
+          device_id: string;
+          vote: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          report_id: string;
+          device_id: string;
+          vote: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          report_id?: string;
+          device_id?: string;
+          vote?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "report_confirmations_report_id_fkey";
+            columns: ["report_id"];
+            referencedRelation: "queue_reports";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       location_notes: {
         Row: {
           id: string;
@@ -169,3 +200,5 @@ export type LoadLevel = QueueReport["load_level"];
 export type Department = Database["public"]["Tables"]["departments"]["Row"];
 
 export type LocationNote = Database["public"]["Tables"]["location_notes"]["Row"];
+
+export type ReportConfirmation = Database["public"]["Tables"]["report_confirmations"]["Row"];

@@ -2,8 +2,12 @@ import type { LoadLevel, QueueReport } from "@/types/database";
 
 /** Reports older than this are ignored entirely, even for staleness display. */
 export const STALE_THRESHOLD_MINUTES = 75;
-/** Window used to compute the live weighted-median status. */
-export const RECENT_WINDOW_MINUTES = 30;
+/** Reports within this window feed the live weighted-median status; beyond
+ * it (but still within STALE_THRESHOLD_MINUTES) a location shows as
+ * "stale" instead of a computed level. Matches confidence "low"'s upper
+ * bound below — past this, the data is too old to call a live status at
+ * all, computed or not. */
+export const LEVEL_WINDOW_MINUTES = 60;
 /** Weight halves every N minutes of report age (exponential recency decay). */
 const RECENCY_HALF_LIFE_MINUTES = 10;
 /** Window for the "N отметок за час" trust signal shown alongside status. */
@@ -12,9 +16,32 @@ export const REPORTS_COUNT_WINDOW_MINUTES = 60;
 const LEVEL_SCORE: Record<LoadLevel, number> = { low: 1, medium: 2, high: 3 };
 const SCORE_LEVEL: LoadLevel[] = ["low", "medium", "high"]; // index 0 => score 1
 
+/** How much to trust the displayed status, based on the age of the most
+ * recent report feeding it (and optionally whether that report has been
+ * disputed — see `aggregateStatus`'s `disputedReportIds` param). Separate
+ * from `status` itself: a location can show a concrete load level while
+ * still flagging that the level might be out of date. */
+export type Confidence = "high" | "medium" | "low" | "expired";
+
+const CONFIDENCE_HIGH_MAX_MINUTES = 10;
+const CONFIDENCE_MEDIUM_MAX_MINUTES = 30;
+// Above this (up to STALE_THRESHOLD_MINUTES), a report is too old to
+// compute a level from at all — see LEVEL_WINDOW_MINUTES.
+
+// A disputed report drops confidence one step, but never all the way to
+// "expired" — a fresh report that got a couple of 👎 votes should read as
+// "could have changed", not "we have no idea".
+const DISPUTE_DOWNGRADE: Record<"high" | "medium" | "low", "high" | "medium" | "low"> = {
+  high: "medium",
+  medium: "low",
+  low: "low",
+};
+
 export type AggregatedStatus =
   | {
       status: LoadLevel;
+      confidence: "high" | "medium" | "low";
+      lastReportId: string;
       lastReportAt: string;
       minutesAgo: number;
       peopleCount: number | null;
@@ -22,6 +49,8 @@ export type AggregatedStatus =
     }
   | {
       status: "stale";
+      confidence: "expired";
+      lastReportId: string;
       lastReportAt: string;
       minutesAgo: number;
       peopleCount: number | null;
@@ -29,6 +58,8 @@ export type AggregatedStatus =
     }
   | {
       status: "no-data";
+      confidence: "expired";
+      lastReportId: null;
       lastReportAt: null;
       minutesAgo: null;
       peopleCount: null;
@@ -71,14 +102,21 @@ function weightedMedianLevel(reports: QueueReport[], now: number): LoadLevel {
 /** Derives a location's display status from its recent reports.
  * `reports` should already be scoped to one location and to at most
  * STALE_THRESHOLD_MINUTES of history (fetch with that cutoff to keep the
- * query cheap — see idx_queue_reports_location_created). */
+ * query cheap — see idx_queue_reports_location_created).
+ *
+ * `disputedReportIds`: report ids whose 👎 votes outnumber their 👍 votes
+ * (see report_confirmations / lib/reportConfirmations.ts). Only the single
+ * freshest report matters here — see DISPUTE_DOWNGRADE above. */
 export function aggregateStatus(
   reports: QueueReport[],
-  now: number = Date.now()
+  now: number = Date.now(),
+  disputedReportIds?: Set<string>
 ): AggregatedStatus {
   if (reports.length === 0) {
     return {
       status: "no-data",
+      confidence: "expired",
+      lastReportId: null,
       lastReportAt: null,
       minutesAgo: null,
       peopleCount: null,
@@ -95,13 +133,26 @@ export function aggregateStatus(
     (r) => ageMinutes(r.created_at, now) <= REPORTS_COUNT_WINDOW_MINUTES
   ).length;
 
-  const recent = reports.filter(
-    (r) => ageMinutes(r.created_at, now) <= RECENT_WINDOW_MINUTES
+  const withinLevelWindow = reports.filter(
+    (r) => ageMinutes(r.created_at, now) <= LEVEL_WINDOW_MINUTES
   );
 
-  if (recent.length > 0) {
+  if (withinLevelWindow.length > 0) {
+    let confidence: "high" | "medium" | "low" =
+      freshestAgeMinutes < CONFIDENCE_HIGH_MAX_MINUTES
+        ? "high"
+        : freshestAgeMinutes < CONFIDENCE_MEDIUM_MAX_MINUTES
+          ? "medium"
+          : "low";
+
+    if (disputedReportIds?.has(freshest.id)) {
+      confidence = DISPUTE_DOWNGRADE[confidence];
+    }
+
     return {
-      status: weightedMedianLevel(recent, now),
+      status: weightedMedianLevel(withinLevelWindow, now),
+      confidence,
+      lastReportId: freshest.id,
       lastReportAt: freshest.created_at,
       minutesAgo: Math.round(freshestAgeMinutes),
       peopleCount: freshest.people_count,
@@ -111,6 +162,8 @@ export function aggregateStatus(
 
   return {
     status: "stale",
+    confidence: "expired",
+    lastReportId: freshest.id,
     lastReportAt: freshest.created_at,
     minutesAgo: Math.round(freshestAgeMinutes),
     peopleCount: freshest.people_count,
@@ -120,6 +173,8 @@ export function aggregateStatus(
 
 const NO_DATA_STATUS: AggregatedStatus = {
   status: "no-data",
+  confidence: "expired",
+  lastReportId: null,
   lastReportAt: null,
   minutesAgo: null,
   peopleCount: null,

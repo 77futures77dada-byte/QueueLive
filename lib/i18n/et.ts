@@ -1,7 +1,3 @@
-function pluralReports(count: number): string {
-  return count === 1 ? "märge" : "märget";
-}
-
 function pluralPeople(count: number): string {
   return count === 1 ? "inimene" : "inimest";
 }
@@ -21,8 +17,15 @@ export const et = {
     low: "Vaba",
     medium: "On järjekord",
     high: "Pikk ooteaeg",
-    stale: "Andmed aegunud",
+    stale: "Värsked andmed puuduvad",
     "no-data": "Keegi pole veel märkinud",
+  },
+
+  // Freshness of the last report, independent of the load level itself —
+  // see lib/aggregateStatus.ts's Confidence type.
+  confidence: {
+    mediumNote: "Võib olla veidi vananenud",
+    lowNote: "Võis muutuda",
   },
 
   // Short glanceable labels for the map badge — the full words above are
@@ -42,8 +45,13 @@ export const et = {
     success: "Aitäh! Sa aitasid järgmisi külastajaid.",
     updatedAgo: (minutes: number) => `Uuendatud ${minutes} min tagasi`,
     neverReported: "Ole esimene, kes märgib",
+    // Framed as attributed, self-reported data, not as fact — this count
+    // is what backs the displayed status, so it stays visible next to it
+    // rather than being a click-to-reveal detail.
     reportsCountLastHour: (count: number) =>
-      count < 3 ? "vähe andmeid" : `${count} ${pluralReports(count)} viimase tunni jooksul`,
+      count < 3
+        ? "vähe andmeid"
+        : `${count} ${pluralPeople(count)} andis viimase tunni jooksul teada`,
   },
 
   geoCheck: {
@@ -81,6 +89,18 @@ export const et = {
   location: {
     getDirections: "Kuva teekond",
     call: "Helista",
+  },
+
+  confirmation: {
+    stillAccurate: "Ikka nii",
+    noLongerAccurate: "Enam mitte",
+    thanks: "Aitäh täpsustuse eest",
+  },
+
+  bestOption: {
+    heading: (name: string) => `Parim valik praegu: ${name}`,
+    distanceAway: (meters: number) =>
+      meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`,
   },
 
   // Keyed by departments.slug — department display names live here, not in

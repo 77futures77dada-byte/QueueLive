@@ -143,20 +143,30 @@ export function Sidebar({
                 >
                   <p className="text-sm font-semibold text-ink">{location.name}</p>
                   <p className="text-xs text-muted">{t.locationType[location.type]}</p>
-                  <p className="mt-1 text-sm">
-                    <span className={`font-medium ${STATUS_TEXT_CLASS[status.status]}`}>
-                      {t.status[status.status]}
-                    </span>
-                    <span className="text-muted">
-                      {" · "}
-                      {status.minutesAgo === null
-                        ? t.report.neverReported
-                        : t.report.updatedAgo(status.minutesAgo)}
-                    </span>
-                  </p>
-                  <p className="text-xs text-muted">
-                    {t.report.reportsCountLastHour(status.reportsLastHour)}
-                  </p>
+                  <div className={status.confidence === "low" ? "opacity-60" : undefined}>
+                    <p className="mt-1 text-sm">
+                      <span className={`font-medium ${STATUS_TEXT_CLASS[status.status]}`}>
+                        {t.status[status.status]}
+                      </span>
+                      {status.confidence === "medium" && (
+                        <span className="ml-1 text-xs text-muted">🕒</span>
+                      )}
+                      <span className="text-muted">
+                        {" · "}
+                        {status.minutesAgo === null
+                          ? t.report.neverReported
+                          : t.report.updatedAgo(status.minutesAgo)}
+                      </span>
+                    </p>
+                    {status.confidence === "low" && (
+                      <p className="text-xs font-medium text-status-medium">
+                        {t.confidence.lowNote}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted">
+                      {t.report.reportsCountLastHour(status.reportsLastHour)}
+                    </p>
+                  </div>
                 </button>
                 {departments.length > 0 && (
                   <button
