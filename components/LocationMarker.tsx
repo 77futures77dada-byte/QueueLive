@@ -19,21 +19,41 @@ const STATUS_BG: Record<"low" | "medium" | "high", string> = {
   medium: "var(--status-medium)",
   high: "var(--status-high)",
 };
-const NEUTRAL_BG = "#9a9890";
-
 const PILL_WIDTH = 68;
 const PILL_HEIGHT = 26;
 const TAIL_HEIGHT = 6;
+
+// No estimate to show at all (no-data or expired/stale) doesn't get a pill —
+// a full-weight pill with a dash inside reads as "this place has a status,
+// and that status is unknown", which is a heavier claim than "we simply
+// have nothing to show here". A small light dot, half the pill's height,
+// makes the no-info state visually recede instead of competing with real
+// estimates for attention.
+const DOT_DIAMETER = 14;
+const DOT_BG = "rgba(154, 152, 144, 0.45)";
 
 interface EstimateText {
   estimate: { label: (minutes: number) => string; none: string };
 }
 
 function buildIcon(status: AggregatedStatus, t: EstimateText) {
-  const isLevel = status.status === "low" || status.status === "medium" || status.status === "high";
-  const bg = isLevel ? STATUS_BG[status.status] : NEUTRAL_BG;
   const minutes = estimateMinutes(status.status);
-  const label = minutes === null ? t.estimate.none : t.estimate.label(minutes);
+
+  if (minutes === null) {
+    const html = `
+      <div style="width:${DOT_DIAMETER}px; height:${DOT_DIAMETER}px; border-radius:50%; background:${DOT_BG}; border:1.5px solid white; box-shadow:0 1px 2px rgba(51,50,46,0.25);"></div>
+    `;
+    return L.divIcon({
+      html,
+      className: "",
+      iconSize: [DOT_DIAMETER, DOT_DIAMETER],
+      iconAnchor: [DOT_DIAMETER / 2, DOT_DIAMETER / 2],
+      popupAnchor: [0, -DOT_DIAMETER / 2],
+    });
+  }
+
+  const bg = STATUS_BG[status.status as "low" | "medium" | "high"];
+  const label = t.estimate.label(minutes);
   const pillClass = status.status === "high" ? "marker-pill-high" : "";
 
   const html = `
