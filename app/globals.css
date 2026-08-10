@@ -128,23 +128,22 @@ body {
   }
 }
 
-/* Soft "radar" ping around markers that need urgent attention — a gentle,
-   continuous cue rather than an attention-grabbing blink. */
-@keyframes soft-pulse-ring {
+/* Soft "radar" ping around the time pill for a long-wait marker — a
+   gentle, continuous cue rather than an attention-grabbing blink. Built
+   from an expanding box-shadow (rather than the old SVG circle + fill-box
+   transform trick from the previous teardrop-pin design) since the pill
+   marker is a plain HTML div, not SVG. */
+@keyframes pill-pulse {
   0% {
-    transform: scale(0.8);
-    opacity: 0.45;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-high) 55%, transparent);
   }
   100% {
-    transform: scale(2.6);
-    opacity: 0;
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--status-high) 0%, transparent);
   }
 }
 
-.marker-pulse-ring {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: soft-pulse-ring 2s ease-out infinite;
+.marker-pill-high {
+  animation: pill-pulse 2s ease-out infinite;
 }
 
 /* LocationDetailSheet's entrance — the standard mobile-map pattern

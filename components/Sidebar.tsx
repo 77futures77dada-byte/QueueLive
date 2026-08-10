@@ -3,10 +3,12 @@
 import { useMemo, useState } from "react";
 import { DepartmentReportList } from "@/components/DepartmentReportList";
 import { distanceMeters } from "@/lib/geo";
+import { estimateMinutes } from "@/lib/estimateMinutes";
+import { usePassiveGeolocation } from "@/lib/usePassiveGeolocation";
 import { useLocale } from "@/lib/i18n/LocaleContext";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
 import type { DepartmentWithStatus } from "@/components/DepartmentReportList";
-import type { Location } from "@/types/database";
+import type { Location, LocationType } from "@/types/database";
 
 // Ascending "how good is this option" — free first, unknowns last. Known-bad
 // still beats no information at all when someone is deciding where to go.
@@ -24,6 +26,35 @@ const STATUS_TEXT_CLASS: Record<AggregatedStatus["status"], string> = {
   high: "text-status-high",
   stale: "text-muted",
   "no-data": "text-muted",
+};
+
+// Small facility-type glyphs for the list rows — a scannable icon next to
+// the name, per the list+map reference this layout is following.
+const TYPE_ICON: Record<LocationType, React.ReactNode> = {
+  hospital: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M12 8v8M8 12h8" />
+    </svg>
+  ),
+  clinic: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+      <path d="M4 21V9l8-5 8 5v12" />
+      <path d="M9 21v-7h6v7" />
+    </svg>
+  ),
+  mfc: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+      <rect x="4" y="4" width="16" height="16" rx="1.5" />
+      <path d="M8 9h8M8 13h8M8 17h5" />
+    </svg>
+  ),
+  post: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+      <rect x="3" y="6" width="18" height="12" rx="1.5" />
+      <path d="m3 7 9 6 9-6" />
+    </svg>
+  ),
 };
 
 type SortMode = "status" | "distance";
@@ -45,7 +76,12 @@ export function Sidebar({
 }: Props) {
   const { t } = useLocale();
   const [sortMode, setSortMode] = useState<SortMode>("status");
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
+  // Seeded passively (no prompt) if permission was already granted, so
+  // distance can show on cards immediately; the explicit button below can
+  // still prompt for it if not.
+  const passivePos = usePassiveGeolocation();
+  const [explicitPos, setExplicitPos] = useState<{ lat: number; lng: number } | null>(null);
+  const userPos = explicitPos ?? passivePos;
   const [geoError, setGeoError] = useState(false);
   const [query, setQuery] = useState("");
   const [expandedLocationId, setExpandedLocationId] = useState<string | null>(null);
@@ -58,7 +94,7 @@ export function Sidebar({
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) => setExplicitPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => setGeoError(true),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
@@ -133,40 +169,46 @@ export function Sidebar({
           const isSelected = location.id === selectedLocationId;
           const isExpanded = location.id === expandedLocationId;
           const departments = departmentsByLocation[location.id] ?? [];
+          const minutes = estimateMinutes(status.status);
+          const distance = userPos ? distanceMeters(userPos, location) : null;
+
           return (
             <li key={location.id} className={isSelected ? "bg-primary-tint" : ""}>
-              <div className="flex items-start">
+              <div className="flex items-center">
                 <button
                   type="button"
                   onClick={() => onSelectLocation(location.id)}
-                  className="block w-full px-4 py-3 text-left"
+                  className="flex min-w-0 flex-1 items-center gap-3 px-4 py-2.5 text-left"
                 >
-                  <p className="text-sm font-semibold text-ink">{location.name}</p>
-                  <p className="text-xs text-muted">{t.locationType[location.type]}</p>
-                  <div className={status.confidence === "low" ? "opacity-60" : undefined}>
-                    <p className="mt-1 text-sm">
-                      <span className={`font-medium ${STATUS_TEXT_CLASS[status.status]}`}>
-                        {t.status[status.status]}
-                      </span>
-                      {status.confidence === "medium" && (
-                        <span className="ml-1 text-xs text-muted">🕒</span>
-                      )}
-                      <span className="text-muted">
-                        {" · "}
-                        {status.minutesAgo === null
+                  <span aria-hidden className="shrink-0 text-muted">
+                    {TYPE_ICON[location.type]}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className={`block truncate text-sm font-semibold text-ink ${status.confidence === "low" ? "opacity-60" : ""}`}>
+                      {location.name}
+                    </span>
+                    <span className="block truncate text-xs text-muted">
+                      {status.confidence === "medium" && "🕒 "}
+                      {status.confidence === "low"
+                        ? t.confidence.lowNote
+                        : status.minutesAgo === null
                           ? t.report.neverReported
                           : t.report.updatedAgo(status.minutesAgo)}
+                    </span>
+                  </span>
+                  {/* Time estimate and distance are the two numbers that
+                      actually decide "where do I go" — kept big and
+                      unambiguous, everything else on the row is secondary. */}
+                  <span className="flex shrink-0 flex-col items-end gap-0.5">
+                    <span className={`text-lg leading-none font-bold ${STATUS_TEXT_CLASS[status.status]}`}>
+                      {minutes === null ? t.estimate.none : t.estimate.label(minutes)}
+                    </span>
+                    {distance !== null && (
+                      <span className="text-xs font-medium text-muted">
+                        {t.bestOption.distanceAway(distance)}
                       </span>
-                    </p>
-                    {status.confidence === "low" && (
-                      <p className="text-xs font-medium text-status-medium">
-                        {t.confidence.lowNote}
-                      </p>
                     )}
-                    <p className="text-xs text-muted">
-                      {t.report.reportsCountLastHour(status.reportsLastHour)}
-                    </p>
-                  </div>
+                  </span>
                 </button>
                 {departments.length > 0 && (
                   <button

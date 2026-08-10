@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { distanceMeters } from "@/lib/geo";
+import { usePassiveGeolocation } from "@/lib/usePassiveGeolocation";
 import { useLocale } from "@/lib/i18n/LocaleContext";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
 import type { Location } from "@/types/database";
@@ -31,34 +31,7 @@ interface Props {
  * door. */
 export function BestOptionBanner({ locations, statusByLocation }: Props) {
   const { t } = useLocale();
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
-
-  useEffect(() => {
-    if (typeof navigator === "undefined" || !navigator.permissions || !navigator.geolocation) {
-      return;
-    }
-    let cancelled = false;
-
-    navigator.permissions
-      .query({ name: "geolocation" as PermissionName })
-      .then((status) => {
-        if (cancelled || status.state !== "granted") return;
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            if (!cancelled) {
-              setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-            }
-          },
-          () => {},
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-        );
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const userPos = usePassiveGeolocation();
 
   if (!userPos || locations.length === 0) return null;
 

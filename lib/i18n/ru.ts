@@ -25,6 +25,15 @@ export const ru = {
     "no-data": "Пока никто не отмечался",
   },
 
+  // Rough, honest translation of a load level into a headline minute
+  // estimate for the map pill / list cards — not a measured wait time
+  // (nothing in the app collects one), so deliberately round numbers with
+  // a "~" rather than false precision like "37 min".
+  estimate: {
+    label: (minutes: number) => `~${minutes} мин`,
+    none: "—",
+  },
+
   // Freshness of the last report, independent of the load level itself —
   // see lib/aggregateStatus.ts's Confidence type.
   confidence: {
@@ -119,12 +128,8 @@ export const ru = {
   },
 
   landing: {
+    headline: "Найди короткую очередь",
     trustNote: "Статус обновляют сами посетители в реальном времени",
-    points: [
-      "Смотри загруженность травмпунктов и поликлиник на карте",
-      "Отмечай, если сейчас в очереди — это займёт секунду",
-      "Помогай другим ехать туда, где короче ждать",
-    ],
     cta: "Посмотреть очередь сейчас",
     todayCount: (count: number) => `Сегодня отметилось ${count} ${pluralPeople(count)}`,
     live: "Реальное время",

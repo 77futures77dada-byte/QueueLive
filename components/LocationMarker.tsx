@@ -4,59 +4,53 @@ import L from "leaflet";
 import { useEffect, useRef } from "react";
 import { Marker, Popup } from "react-leaflet";
 import { LocationDetailContent } from "@/components/LocationDetailContent";
+import { useLocale } from "@/lib/i18n/LocaleContext";
+import { estimateMinutes } from "@/lib/estimateMinutes";
 import type { AggregatedStatus } from "@/lib/aggregateStatus";
 import type { DepartmentWithStatus } from "@/components/DepartmentReportList";
 import type { Location, LocationNote } from "@/types/database";
 
-// Status now lives on a small badge, not the pin itself — the pin's job is
-// just to say "medical location here" (universal red teardrop), the badge's
-// job is to say how busy it currently is.
-const STATUS_COLOR: Record<"low" | "medium" | "high", string> = {
+// The marker is now a pill showing a headline minute estimate, not an
+// abstract colored pin — the Google Maps ETA / appointment-app pattern.
+// Color still carries the status at a glance, but the number is the point:
+// no click needed to see roughly how long the wait is.
+const STATUS_BG: Record<"low" | "medium" | "high", string> = {
   low: "var(--status-low)",
   medium: "var(--status-medium)",
   high: "var(--status-high)",
 };
+const NEUTRAL_BG = "#9a9890";
 
-const PIN_COLOR = "#dc2626"; // saturated medical red — the map convention for "hospital"
-const BADGE_GRAY = "#9a9890";
-const PIN_WIDTH = 28;
-const PIN_HEIGHT = 36;
-const BADGE_CX = 21;
-const BADGE_CY = 10;
-const BADGE_R = 5.5;
+const PILL_WIDTH = 68;
+const PILL_HEIGHT = 26;
+const TAIL_HEIGHT = 6;
 
-function buildBadge(status: AggregatedStatus): string {
-  if (status.status === "no-data") return ""; // pin alone still reads as "hospital"
-
-  if (status.status === "stale") {
-    return `<circle cx="${BADGE_CX}" cy="${BADGE_CY}" r="${BADGE_R}" fill="${BADGE_GRAY}" stroke="white" stroke-width="2" />`;
-  }
-
-  const color = STATUS_COLOR[status.status];
-  const pulse =
-    status.status === "high"
-      ? `<circle class="marker-pulse-ring" cx="${BADGE_CX}" cy="${BADGE_CY}" r="${BADGE_R}" fill="${color}" />`
-      : "";
-
-  return `${pulse}<circle cx="${BADGE_CX}" cy="${BADGE_CY}" r="${BADGE_R}" fill="${color}" stroke="white" stroke-width="2" />`;
+interface EstimateText {
+  estimate: { label: (minutes: number) => string; none: string };
 }
 
-function buildIcon(status: AggregatedStatus) {
-  const badge = buildBadge(status);
+function buildIcon(status: AggregatedStatus, t: EstimateText) {
+  const isLevel = status.status === "low" || status.status === "medium" || status.status === "high";
+  const bg = isLevel ? STATUS_BG[status.status] : NEUTRAL_BG;
+  const minutes = estimateMinutes(status.status);
+  const label = minutes === null ? t.estimate.none : t.estimate.label(minutes);
+  const pillClass = status.status === "high" ? "marker-pill-high" : "";
 
   const html = `
-    <svg width="${PIN_WIDTH}" height="${PIN_HEIGHT}" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 3px rgba(51,50,46,0.4))">
-      <path d="M14 1.5C7.65 1.5 2.5 6.65 2.5 13c0 8.2 11.5 21.5 11.5 21.5S25.5 21.2 25.5 13C25.5 6.65 20.35 1.5 14 1.5z" fill="${PIN_COLOR}" stroke="white" stroke-width="1.5" />
-      ${badge}
-    </svg>
+    <div style="display:flex; flex-direction:column; align-items:center; width:${PILL_WIDTH}px;">
+      <div class="${pillClass}" style="display:flex; align-items:center; justify-content:center; width:100%; height:${PILL_HEIGHT}px; border-radius:999px; background:${bg}; color:white; font-size:11px; font-weight:700; border:2px solid white; box-shadow:0 2px 4px rgba(51,50,46,0.35); white-space:nowrap;">
+        ${label}
+      </div>
+      <div style="width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:${TAIL_HEIGHT}px solid ${bg}; margin-top:-1px;"></div>
+    </div>
   `;
 
   return L.divIcon({
     html,
     className: "",
-    iconSize: [PIN_WIDTH, PIN_HEIGHT],
-    iconAnchor: [PIN_WIDTH / 2, PIN_HEIGHT],
-    popupAnchor: [0, -PIN_HEIGHT + 6],
+    iconSize: [PILL_WIDTH, PILL_HEIGHT + TAIL_HEIGHT],
+    iconAnchor: [PILL_WIDTH / 2, PILL_HEIGHT + TAIL_HEIGHT],
+    popupAnchor: [0, -(PILL_HEIGHT + TAIL_HEIGHT)],
   });
 }
 
@@ -73,6 +67,7 @@ interface Props {
  * (see globals.css) and LocationDetailSheet shows the same content as a
  * bottom sheet instead — see that component for why. */
 export function LocationMarker({ location, status, departments, notes, isSelected, onOpen }: Props) {
+  const { t } = useLocale();
   const markerRef = useRef<L.Marker>(null);
 
   useEffect(() => {
@@ -83,7 +78,7 @@ export function LocationMarker({ location, status, departments, notes, isSelecte
     <Marker
       ref={markerRef}
       position={[location.lat, location.lng]}
-      icon={buildIcon(status)}
+      icon={buildIcon(status, t)}
       eventHandlers={{ popupopen: () => onOpen?.() }}
     >
       <Popup minWidth={260} maxHeight={420}>

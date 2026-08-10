@@ -21,6 +21,15 @@ export const et = {
     "no-data": "Keegi pole veel märkinud",
   },
 
+  // Rough, honest translation of a load level into a headline minute
+  // estimate for the map pill / list cards — not a measured wait time
+  // (nothing in the app collects one), so deliberately round numbers with
+  // a "~" rather than false precision like "37 min".
+  estimate: {
+    label: (minutes: number) => `~${minutes} min`,
+    none: "—",
+  },
+
   // Freshness of the last report, independent of the load level itself —
   // see lib/aggregateStatus.ts's Confidence type.
   confidence: {
@@ -115,12 +124,8 @@ export const et = {
   },
 
   landing: {
+    headline: "Leia lühem järjekord",
     trustNote: "Külastajad uuendavad staatust ise, reaalajas",
-    points: [
-      "Vaata haiglate ja perearstikeskuste koormust kaardil",
-      "Märgi, kui oled praegu järjekorras — see võtab hetke",
-      "Aita teistel valida, kus on lühem ooteaeg",
-    ],
     cta: "Vaata järjekorda kohe",
     todayCount: (count: number) => `Täna märkis end ${count} ${pluralPeople(count)}`,
     live: "Reaalajas",

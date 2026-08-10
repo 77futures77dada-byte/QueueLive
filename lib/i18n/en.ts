@@ -21,6 +21,15 @@ export const en = {
     "no-data": "No reports yet",
   },
 
+  // Rough, honest translation of a load level into a headline minute
+  // estimate for the map pill / list cards — not a measured wait time
+  // (nothing in the app collects one), so deliberately round numbers with
+  // a "~" rather than false precision like "37 min".
+  estimate: {
+    label: (minutes: number) => `~${minutes} min`,
+    none: "—",
+  },
+
   // Freshness of the last report, independent of the load level itself —
   // see lib/aggregateStatus.ts's Confidence type.
   confidence: {
@@ -115,12 +124,8 @@ export const en = {
   },
 
   landing: {
+    headline: "Find the shortest wait",
     trustNote: "Visitors update the status themselves, in real time",
-    points: [
-      "See how busy ERs and clinics are on the map",
-      "Check in if you're in the queue right now — takes a second",
-      "Help others go where the wait is shorter",
-    ],
     cta: "See the queue now",
     todayCount: (count: number) => `${count} ${pluralPeople(count)} checked in today`,
     live: "Live",
