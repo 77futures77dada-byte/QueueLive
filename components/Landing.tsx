@@ -38,20 +38,25 @@ export function Landing({ onEnter }: Props) {
   return (
     <div className="flex flex-1 flex-col bg-surface">
       <header className="relative z-10 flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        {/* The cross reads as part of the wordmark now, not a standalone
-            accent — a bare small glyph inline with the text, no colored
-            badge box around it. Reference apps in this space lean on the
-            map/numbers themselves for the medical feel, not a logo mark. */}
-        <div className="flex min-w-0 items-center gap-1.5">
-          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-primary">
-            <rect x="10" y="4" width="4" height="16" rx="1" fill="currentColor" />
-            <rect x="4" y="10" width="16" height="4" rx="1" fill="currentColor" />
+        <span className="min-w-0 truncate text-sm font-semibold text-primary">
+          {t.appTitle}
+        </span>
+
+        {/* The red cross, take four: a plain, unrotated "+" built from two
+            manually-coordinated rects (no CSS rotate — that's what made
+            it look crooked before), placed in normal flex flow next to
+            the language switcher rather than absolutely positioned. Three
+            previous attempts broke specifically because of absolute/fixed
+            positioning interacting badly with viewport size or an
+            ancestor's overflow — a plain flex sibling with a fixed gap
+            can't overlap the switcher or drift at any viewport, because
+            the browser lays it out the same way it lays out any other
+            row item. */}
+        <div className="flex shrink-0 items-center gap-3">
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-9 w-9 text-red-600">
+            <rect x="9" y="2" width="6" height="20" fill="currentColor" />
+            <rect x="2" y="9" width="20" height="6" fill="currentColor" />
           </svg>
-          <span className="min-w-0 truncate text-sm font-semibold text-primary">
-            {t.appTitle}
-          </span>
-        </div>
-        <div className="shrink-0">
           <LanguageSwitcher />
         </div>
       </header>
@@ -111,8 +116,12 @@ export function Landing({ onEnter }: Props) {
 
           <div>
             {/* The direct question, not the product name, is the headline
-                now — appTitle already lives in the header. */}
-            <h1 className="text-4xl font-bold text-primary">{t.landing.headline}</h1>
+                now — appTitle already lives in the header. Dark ink, not
+                the accent blue: blue is reserved for actionable/status
+                elements (the CTA, status dots) so it still reads as a
+                signal there — a blue headline is also the reflexive
+                "AI landing page" look this is deliberately avoiding. */}
+            <h1 className="text-4xl font-bold text-ink">{t.landing.headline}</h1>
             <p className="mt-2 text-sm text-muted">{t.landing.trustNote}</p>
             {/* A visible "0" would read as "nobody's here" — worse than saying
                 nothing at all, so the block only shows once it has something
